@@ -12,6 +12,86 @@
 	],
 	"item": [
 		{
+			"name": "00 Demo Unidad IV (Pallo) - Directriz 3",
+			"description": "Los 3 endpoints elegidos para la demo en vivo del laboratorio. Correr en orden: Login primero (deja la cookie de sesion), despues los otros dos. Verificado en vivo el 2026-08-09 contra datos reales.",
+			"item": [
+				{
+					"name": "1) Login admin (200, deja cookie de sesion)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Abre la sesion (JWT en cookie HttpOnly). Correr esta primero siempre.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"admin\",\n  \"password\": \"Admin2026!\"\n}"
+						}
+					}
+				},
+				{
+					"name": "2) Categorias activas (200, lectura real)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/categorias/activas",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"categorias",
+								"activas"
+							]
+						},
+						"description": "Requiere sesion (correr el Login antes). Devuelve las categorias reales de la base."
+					}
+				},
+				{
+					"name": "3) Crear categoria (201, escritura real)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/categorias",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"categorias"
+							]
+						},
+						"description": "Requiere rol ADMINISTRADOR (admin cumple). Despues de la demo, borrarla con DELETE {{base_url}}/api/categorias/{id} para no dejar basura de prueba.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"SUB-18\",\n  \"edadMin\": 16,\n  \"edadMax\": 18,\n  \"descripcion\": \"Categoria sub-18\",\n  \"activo\": true\n}"
+						}
+					}
+				}
+			]
+		},
+		{
 			"name": "01 Auth",
 			"item": [
 				{
@@ -594,21 +674,21 @@
 			"name": "05 Documentación",
 			"item": [
 				{
-					"name": "OpenAPI 3.0 (200, /api/docs)",
+					"name": "OpenAPI 3.0 (200, /api/docs.json)",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/docs",
+							"raw": "{{base_url}}/api/docs.json",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
 								"api",
-								"docs"
+								"docs.json"
 							]
 						},
-						"description": ""
+						"description": "Actualizado 2026-08-09: /api/docs ahora redirige a Swagger UI (HTML); el JSON crudo se movio a /api/docs.json."
 					}
 				},
 				{

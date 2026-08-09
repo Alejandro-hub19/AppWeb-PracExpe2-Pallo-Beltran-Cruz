@@ -72,13 +72,20 @@ Nota sobre el endpoint QR (`POST /api/asistencias/qr/sesion/{idSesion}/token`): 
 
 Importante para el ensayo: si prueban crear una categoria de prueba, bórrenla despues (`DELETE /api/categorias/{id}`) para no dejar basura en los datos que van a mostrarle al docente — asi se hizo aqui (se creo "TEST-BORRAR" con id 4 y se elimino de inmediato; la base quedo con las mismas 3 categorias de siempre).
 
-## 3. Checklist de ensayo (la directriz dice "no improvisados")
+## 3. Coleccion de Postman
+
+SGED ya tenia su propia coleccion en [`docs/postman/coleccion.json`](postman/coleccion.json) (30 requests, la usan para las pruebas OWASP/bench). Se le agrego una carpeta nueva **arriba de todo**, `00 Demo Unidad IV (Pallo) - Directriz 3`, con exactamente los 3 requests de este documento ya armados (login, categorias/activas, crear categoria) — no hace falta armar nada a mano, solo importar el archivo en Postman/Insomnia y correr esa carpeta en orden. De paso se corrigio el request viejo "OpenAPI 3.0" para que apunte a `/api/docs.json` (la ruta cambio con el fix de arriba).
+
+Variable que usa la coleccion: `base_url` = `http://localhost:8080` (ya viene configurada).
+
+## 4. Checklist de ensayo (la directriz dice "no improvisados")
 
 - [x] Cambio de rutas de Swagger en `application.yml` — aplicado y verificado en vivo
 - [x] Fix de `SecurityConfig.java` para que `/api/docs.json` no quede bloqueado — aplicado y verificado
 - [x] `http://localhost:8080/api/docs` abre Swagger UI (no el JSON) — confirmado
 - [x] Los 3 endpoints (login, categorias/activas, categorias POST) probados en vivo con curl, con datos reales
-- [ ] Decidir si el 3er endpoint es `POST /api/categorias` (ya probado) o el QR (falta crear una sesion de entrenamiento primero)
-- [ ] Coleccion de Postman/Insomnia armada con las 3 requests (los pasos de arriba ya estan verificados, falta pasarlos a Postman)
-- [ ] Ensayar el orden completo una vez mas en Postman, de corrido, sin errores
+- [x] Coleccion de Postman lista para importar, con la carpeta de demo ya armada
+- [ ] **Pendiente de tu lado:** los 2 fixes de arriba (`application.yml` y `SecurityConfig.java`) estan aplicados SOLO como cambios locales sin commitear en tu repo real `SGED_APPWEB` — no los commiteo yo porque me pediste no tocar ese repo. Si no los subes tu mismo antes del laboratorio, y algo reinicia esa carpeta (otra maquina, un `git stash`, etc.), el fix desaparece y `/api/docs` vuelve a servir el JSON en vez de Swagger UI.
+- [ ] Importar `docs/postman/coleccion.json` en Postman/Insomnia y correr la carpeta `00 Demo Unidad IV` una vez de principio a fin, en tu maquina, antes del laboratorio
+- [ ] Decidir si el 3er endpoint se queda en `POST /api/categorias` (ya probado) o cambian al QR (falta crear una sesion de entrenamiento primero)
 - [ ] `.env` copiado (`cp .env.example .env`) y stack arriba con `docker compose up -d --build` (`make` no esta instalado en esta maquina) ANTES del laboratorio
