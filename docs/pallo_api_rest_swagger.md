@@ -78,14 +78,23 @@ SGED ya tenia su propia coleccion en [`docs/postman/coleccion.json`](postman/col
 
 Variable que usa la coleccion: `base_url` = `http://localhost:8080` (ya viene configurada).
 
-## 4. Checklist de ensayo (la directriz dice "no improvisados")
+## 4. Evidencia del ensayo (capturas reales, hechas por Pallo el 2026-08-09)
+
+En [`docs/postman/evidencias/`](postman/evidencias/), las 4 requests de la carpeta de demo corridas de verdad en Postman, en orden:
+
+1. [`01-login.png`](postman/evidencias/01-login.png) — 200, cookie de sesion
+2. [`02-categorias-activas.png`](postman/evidencias/02-categorias-activas.png) — 200, las 3 categorias reales
+3. [`03-crear-categoria.png`](postman/evidencias/03-crear-categoria.png) — 201, categoria de prueba creada (id 5)
+4. [`04-delete-limpieza.png`](postman/evidencias/04-delete-limpieza.png) — 204, la misma categoria borrada despues (limpieza, no quedo basura en la base)
+
+## 5. Checklist de ensayo (la directriz dice "no improvisados")
 
 - [x] Cambio de rutas de Swagger en `application.yml` — aplicado y verificado en vivo
 - [x] Fix de `SecurityConfig.java` para que `/api/docs.json` no quede bloqueado — aplicado y verificado
 - [x] `http://localhost:8080/api/docs` abre Swagger UI (no el JSON) — confirmado
 - [x] Los 3 endpoints (login, categorias/activas, categorias POST) probados en vivo con curl, con datos reales
 - [x] Coleccion de Postman lista para importar, con la carpeta de demo ya armada
-- [ ] **Pendiente de tu lado:** los 2 fixes de arriba (`application.yml` y `SecurityConfig.java`) estan aplicados SOLO como cambios locales sin commitear en tu repo real `SGED_APPWEB` — no los commiteo yo porque me pediste no tocar ese repo. Si no los subes tu mismo antes del laboratorio, y algo reinicia esa carpeta (otra maquina, un `git stash`, etc.), el fix desaparece y `/api/docs` vuelve a servir el JSON en vez de Swagger UI.
-- [ ] Importar `docs/postman/coleccion.json` en Postman/Insomnia y correr la carpeta `00 Demo Unidad IV` una vez de principio a fin, en tu maquina, antes del laboratorio
-- [ ] Decidir si el 3er endpoint se queda en `POST /api/categorias` (ya probado) o cambian al QR (falta crear una sesion de entrenamiento primero)
-- [ ] `.env` copiado (`cp .env.example .env`) y stack arriba con `docker compose up -d --build` (`make` no esta instalado en esta maquina) ANTES del laboratorio
+- [x] Los 2 fixes de `SGED_APPWEB` (`application.yml` y `SecurityConfig.java`) ya estan commiteados y pusheados en el repo real (llegaron dentro del commit `0798377`, junto con otro trabajo de Pallo)
+- [x] Importado `docs/postman/coleccion.json` en Postman y corrida la carpeta `00 Demo Unidad IV` de principio a fin — ver capturas arriba
+- [ ] Decidir si el 3er endpoint se queda en `POST /api/categorias` (ya probado) o cambian al QR (falta crear una sesion de entrenamiento primero) — opcional, no bloquea nada
+- [x] Stack levantado con `docker compose up -d --build` y verificado con datos reales (`make` no esta instalado en esta maquina, se uso el comando directo)
