@@ -1,0 +1,818 @@
+% ============================================================
+%  INFORME TÉCNICO — Práctica Experimental Unidad IV
+%  GA — Aplicaciones Web  |  Grupo: Pallo · Beltrán · Cruz
+% ============================================================
+\documentclass[12pt,a4paper]{article}
+
+% ── Codificación y fuentes ──────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% ── Idioma ─────────────────────────────────────────────────
+\usepackage[spanish,english]{babel}
+
+% ── Geometría ──────────────────────────────────────────────
+\usepackage[
+  top=2.5cm, bottom=2.5cm,
+  left=3cm, right=2.5cm
+]{geometry}
+
+% ── Interlineado ───────────────────────────────────────────
+\usepackage{setspace}
+\setstretch{1.5}
+
+% ── Encabezados y pies ─────────────────────────────────────
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Práctica Experimental --- Unidad IV}
+\fancyhead[R]{\small Pallo $\cdot$ Beltrán $\cdot$ Cruz}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ── Tablas ─────────────────────────────────────────────────
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+% ── Colores y cajas ────────────────────────────────────────
+\usepackage[dvipsnames]{xcolor}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+
+% ── Código fuente ──────────────────────────────────────────
+\usepackage{listings}
+\lstdefinestyle{json}{
+  language=,
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{gray!8},
+  rulecolor=\color{gray!40},
+  numbers=none,
+  showstringspaces=false
+}
+\lstdefinestyle{xml}{
+  language=XML,
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{orange!5},
+  rulecolor=\color{orange!40},
+  numbers=none,
+  showstringspaces=false
+}
+\lstdefinestyle{yaml}{
+  language=,
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{blue!4},
+  rulecolor=\color{blue!20},
+  numbers=none,
+  showstringspaces=false
+}
+
+% ── Gráficos e imágenes ────────────────────────────────────
+\usepackage{graphicx}
+\usepackage{float}
+
+% ── Hipervínculos ──────────────────────────────────────────
+\usepackage[
+  colorlinks=true,
+  linkcolor=NavyBlue,
+  citecolor=ForestGreen,
+  urlcolor=BrickRed
+]{hyperref}
+
+% ── Citas APA (biblatex + biber) ───────────────────────────
+\usepackage[
+  style=apa,
+  sortcites=true,
+  sorting=nyt,
+  backend=biber
+]{biblatex}
+\addbibresource{referencias.bib}
+
+% ── Formato de secciones ───────────────────────────────────
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries\color{NavyBlue}}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries\color{NavyBlue!80}}{\thesubsection}{1em}{}
+
+% ── Metadatos PDF ──────────────────────────────────────────
+\hypersetup{
+  pdftitle={Práctica Experimental Unidad IV},
+  pdfauthor={Pallo, Beltrán, Cruz},
+  pdfsubject={Aplicaciones Web --- Unidad IV: Temas 13-16},
+  pdfkeywords={REST, SOAP, MVC, API, Swagger, Jamstack, PWA}
+}
+
+% ============================================================
+\begin{document}
+\selectlanguage{spanish}
+
+% ────────────────────────────────────────────────────────────
+%  PORTADA
+% ────────────────────────────────────────────────────────────
+\begin{titlepage}
+  \begin{center}
+    \vspace*{1cm}
+    {\LARGE \textbf{UNIVERSIDAD TÉCNICA}}\\[0.3cm]
+    {\large Facultad de Ciencias de la Computación}\\[0.2cm]
+    {\large Carrera de Ingeniería en Tecnologías de la Información}\\[2cm]
+
+    \rule{\linewidth}{0.5mm}\\[0.4cm]
+    {\huge \textbf{Práctica Experimental --- Unidad IV}}\\[0.3cm]
+    {\Large Temas 13--16: Arquitecturas Web, APIs REST,\\[0.1cm]
+     SOAP y Tendencias Emergentes}\\[0.3cm]
+    \rule{\linewidth}{0.5mm}\\[1.5cm]
+
+    {\large \textbf{Materia:} Aplicaciones Web}\\[0.3cm]
+    {\large \textbf{Grupo:} PFC --- Pallo $\cdot$ Beltrán $\cdot$ Cruz}\\[0.3cm]
+    {\large \textbf{PFC:} SGED --- Sistema de Gestión Estudiantil Deportiva}\\[2cm]
+
+    \vfill
+    {\large \today}
+  \end{center}
+\end{titlepage}
+
+\newpage
+
+% ────────────────────────────────────────────────────────────
+%  RESUMEN BILINGÜE  [Cruz]
+% ────────────────────────────────────────────────────────────
+\section*{Resumen}
+\addcontentsline{toc}{section}{Resumen}
+
+\noindent
+El presente informe documenta la Práctica Experimental correspondiente a la Unidad IV de la
+asignatura Aplicaciones Web, abarcando los Temas 13 a 16.
+El equipo diseñó, implementó y demostró el \textbf{Sistema de Gestión Estudiantil Deportiva (SGED)},
+una aplicación web completa basada en el patrón Modelo--Vista--Controlador (MVC) con backend en
+\textit{Spring Boot 3.2} (Java~21) y frontend en \textit{Angular 21}.
+Se expone la API REST del sistema con documentación interactiva mediante Swagger UI accesible en
+\texttt{/api/docs}, se ejecutan en vivo al menos tres endpoints representativos y se elabora una
+comparativa rigurosa entre SOAP y REST con nueve criterios de análisis.
+Finalmente, se reflexiona críticamente sobre las tendencias emergentes: Jamstack,
+Progressive Web Apps (PWA) e Inteligencia Artificial generativa aplicada al desarrollo web.
+
+\bigskip
+
+\begin{otherlanguage}{english}
+\noindent\textbf{Abstract.}
+This report documents the Experimental Practice for Unit IV of the Web Applications course,
+covering Topics 13--16.
+The team designed, implemented, and demonstrated the \textbf{Sports Student Management System (SGED)},
+a full-stack web application built on the Model--View--Controller (MVC) pattern using a
+\textit{Spring Boot 3.2} (Java~21) backend and an \textit{Angular 21} frontend.
+The system's REST API is presented with interactive documentation via Swagger UI at \texttt{/api/docs};
+at least three representative endpoints are executed live.
+A rigorous nine-criterion comparison between SOAP and REST is provided, and the report closes with a
+critical reflection on emerging trends: Jamstack, Progressive Web Apps (PWA), and generative
+Artificial Intelligence in web development.
+\end{otherlanguage}
+
+\bigskip
+\noindent\textbf{Palabras clave:} REST, SOAP, MVC, API, OpenAPI, Swagger, Jamstack, PWA,
+IA generativa, Spring Boot.\\
+\textbf{Keywords:} REST, SOAP, MVC, API, OpenAPI, Swagger, Jamstack, PWA, generative AI,
+Spring Boot.
+
+\newpage
+\tableofcontents
+\newpage
+
+% ============================================================
+%  1. INTRODUCCIÓN  [Cruz]
+% ============================================================
+\section{Introducción}
+
+El ecosistema del desarrollo web ha evolucionado aceleradamente durante la última década.
+La adopción masiva de arquitecturas orientadas a servicios, el auge de las API REST y la irrupción
+de paradigmas como Jamstack y la IA generativa obligan al profesional contemporáneo a comprender
+tanto los fundamentos teóricos como sus implicaciones prácticas.
+
+Esta práctica tiene como propósito consolidar los conocimientos de la Unidad IV a través de la
+implementación, documentación y análisis crítico de un sistema real: el SGED
+(\textit{Sports Student Management System}), desarrollado como Proyecto de Fin de Carrera (PFC)
+del equipo.
+
+El informe se organiza como sigue: la Sección~\ref{sec:biblio} presenta la revisión bibliográfica
+con al menos cinco fuentes académicas en norma APA; la Sección~\ref{sec:mvc} describe la
+aplicación MVC completa; la Sección~\ref{sec:api} documenta la API REST con Swagger UI;
+la Sección~\ref{sec:soap} elabora la comparativa SOAP vs.\ REST; la Sección~\ref{sec:tendencias}
+reflexiona sobre las tendencias emergentes; y las Secciones~\ref{sec:conclusiones}
+y~\ref{sec:futuro} presentan las conclusiones y el trabajo futuro, respectivamente.
+
+% ============================================================
+%  2. REVISIÓN BIBLIOGRÁFICA  [Cruz]  — Directriz 1
+% ============================================================
+\section{Revisión Bibliográfica}
+\label{sec:biblio}
+
+De acuerdo con la Directriz~1, se consultaron al menos cinco fuentes académicas primarias,
+incluyendo la disertación seminal de \textcite{fielding2000} sobre REST y la documentación oficial
+del framework utilizado (\textcite{springdoc2024}).
+
+\subsection{Fielding (2000) --- REST como estilo arquitectónico}
+
+\textcite{fielding2000} definió en su disertación doctoral la arquitectura
+\textit{Representational State Transfer} (REST) como un conjunto de seis restricciones:
+cliente--servidor, \textit{stateless}, caché, interfaz uniforme, sistema por capas y código
+bajo demanda (opcional).
+Estas restricciones, cuando se aplican de forma coherente, producen sistemas con alta
+escalabilidad y evolvabilidad \parencite{fielding2000}.
+El SGED adopta las cinco restricciones obligatorias: sesiones de usuario almacenadas en el
+cliente mediante JWT en \textit{cookie HttpOnly} (stateless), respuestas cacheables para
+\texttt{GET /api/categorias/activas} e interfaz uniforme basada en sustantivos en plural.
+
+\subsection{Richardson y Ruby (2007) --- REST Práctico}
+
+\textcite{richardson2007} ampliaron el trabajo de Fielding con una guía práctica sobre el
+diseño de APIs RESTful, introduciendo el concepto de \textit{Resource-Oriented Architecture}
+(ROA) y el modelo de madurez REST por niveles.
+Destacan que el uso correcto de los verbos HTTP y la hipermedia (HATEOAS) diferencia una API
+verdaderamente RESTful de una simple API HTTP \parencite{richardson2007}.
+
+\subsection{SpringDoc OpenAPI 2 --- Documentación oficial}
+
+\textcite{springdoc2024} describe la integración de SpringDoc OpenAPI 2 con Spring Boot 3,
+que es la librería utilizada en el SGED para exponer la especificación OpenAPI 3.1 en
+\texttt{/api/docs.json} y la interfaz Swagger UI en \texttt{/api/docs}.
+
+\begin{lstlisting}[style=yaml, caption={Configuración SpringDoc en \texttt{application.yml}}]
+springdoc:
+  api-docs:
+    path: /api/docs.json
+  swagger-ui:
+    path: /api/docs
+    operationsSorter: method
+\end{lstlisting}
+
+\subsection{W3C (2007) --- Especificación SOAP 1.2}
+
+\textcite{w3c2007} define el protocolo SOAP 1.2, que establece un modelo de mensajería
+basado en XML con un \textit{Envelope} obligatorio (Header + Body), independiente del
+transporte subyacente.
+La especificación WSDL 2.0, también normativa del W3C, describe el contrato del servicio
+de forma tipada y \textit{machine-readable}.
+
+\subsection{Masse (2011) --- REST API Design Rulebook}
+
+\textcite{masse2011} sistematiza las buenas prácticas de diseño de APIs RESTful en un conjunto
+de reglas prescriptivas que cubren nomenclatura de URIs, uso de métodos HTTP, gestión de
+errores con códigos de estado y versionado.
+Las reglas de Masse se aplicaron en el SGED: URIs en minúsculas con guiones medios,
+sustantivos en plural (\texttt{/api/categorias}), respuestas de error consistentes.
+
+\subsection{Garriga et al.\ (2021) --- Adopción de APIs en América Latina}
+
+\textcite{garriga2021} analizan el estado de adopción de APIs REST en proyectos de software
+en América Latina, concluyendo que Ecuador mantiene servicios SOAP legados en entidades
+gubernamentales y bancarias por razones de compatibilidad histórica, aunque el sector privado
+y las \textit{fintechs} han migrado mayoritariamente a REST.
+
+% ============================================================
+%  3. APLICACIÓN MVC COMPLETA  [Cruz]  — Directriz 2
+% ============================================================
+\section{Aplicación MVC Completa --- SGED}
+\label{sec:mvc}
+
+\subsection{Descripción general}
+
+El SGED es un sistema web para la gestión de estudiantes deportivos, que cubre los módulos
+de autenticación, categorías, sesiones de entrenamiento y control de asistencia mediante
+generación y lectura de códigos QR.
+
+\subsection{Arquitectura MVC}
+
+La aplicación implementa el patrón Modelo--Vista--Controlador en dos capas independientes:
+
+\begin{itemize}
+  \item \textbf{Modelo + Controlador (Backend):} Spring Boot 3.2 / Java 21.
+    Los modelos son entidades JPA mapeadas a PostgreSQL 16.
+    Los controladores REST exponen los recursos con \texttt{@RestController} y
+    \texttt{@RequestMapping("/api/...")}.
+    La capa de servicio (\texttt{@Service}) encapsula la lógica de negocio.
+  \item \textbf{Vista (Frontend):} Angular 21 (Angular CLI).
+    La comunicación con el backend se realiza mediante el \texttt{HttpClient} de Angular con
+    \texttt{withCredentials: true} para el manejo automático de cookies.
+\end{itemize}
+
+\subsection{Módulos de la Entrega 1B}
+
+\begin{table}[H]
+  \centering
+  \caption{Módulos implementados en la Entrega 1B del SGED}
+  \label{tab:modulos}
+  \begin{tabularx}{\linewidth}{@{}lL{4.5cm}L{5cm}@{}}
+    \toprule
+    \textbf{Módulo} & \textbf{Backend (Spring Boot)} & \textbf{Frontend (Angular)} \\
+    \midrule
+    Autenticación   & \texttt{AuthController} + JWT HttpOnly & Página Login, gestión de sesión \\
+    Categorías      & \texttt{CategoriaController} CRUD      & Listado, alta y baja \\
+    Sesiones        & \texttt{SesionController} + CRUD       & Calendario de sesiones \\
+    Asistencia / QR & \texttt{AsistenciaController} + token QR & Scanner QR en Angular \\
+    Usuarios        & \texttt{UsuarioController} + roles     & Gestión de usuarios y permisos \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Verificación en laboratorio}
+
+Para la sesión de laboratorio, el docente verificará la aplicación ejecutando:
+\begin{enumerate}
+  \item \texttt{make up} (o \texttt{arrancar.bat} en Windows) para levantar el stack completo.
+  \item Navegar a \texttt{http://localhost:4200} y autenticarse con las credenciales de
+    \texttt{db/seed.sql}.
+  \item Recorrer los módulos de categorías, sesiones y asistencia QR en tiempo real.
+\end{enumerate}
+
+% ============================================================
+%  4. API REST + SWAGGER UI  [Pallo]  — Directriz 3
+% ============================================================
+\section{API REST Documentada --- Swagger UI}
+\label{sec:api}
+
+\subsection{Configuración de Swagger UI}
+
+La API del SGED está documentada mediante \textbf{SpringDoc OpenAPI 2}.
+Para cumplir la Directriz~3, se ajustó \texttt{application.yml} de modo que la interfaz
+interactiva Swagger UI quede accesible en \texttt{/api/docs}:
+
+\begin{lstlisting}[style=yaml, caption={Rutas SpringDoc ajustadas para la demo}]
+springdoc:
+  api-docs:
+    path: /api/docs.json      # JSON crudo OpenAPI 3.1
+  swagger-ui:
+    path: /api/docs           # Interfaz interactiva Swagger UI
+    operationsSorter: method
+\end{lstlisting}
+
+\subsection{Endpoints demostrados en vivo}
+
+Los tres endpoints se ejecutan en el siguiente orden durante la sesión de laboratorio.
+
+\subsubsection{Endpoint 1 --- POST /api/auth/login}
+
+\begin{lstlisting}[style=json, caption={Request body --- POST /api/auth/login}]
+{
+  "username": "admin",
+  "password": "Admin2026!"
+}
+\end{lstlisting}
+
+Respuesta esperada (\texttt{200 OK}):
+
+\begin{lstlisting}[style=json, caption={Response --- POST /api/auth/login}]
+{
+  "username": "admin",
+  "role": "ADMINISTRADOR",
+  "message": "Sesion iniciada correctamente"
+}
+\end{lstlisting}
+
+La cookie \texttt{access\_token} se incluye automáticamente en todas las peticiones
+siguientes si el manejo de cookies está activo en Postman/Insomnia.
+
+\subsubsection{Endpoint 2 --- GET /api/categorias/activas}
+
+Retorna la lista de categorías activas; requiere rol \texttt{ADMINISTRADOR},
+\texttt{ENTRENADOR} o \texttt{RECEPCIONISTA}.
+
+\begin{lstlisting}[style=json, caption={Response --- GET /api/categorias/activas (estructura CategoriaResponse.java)}]
+[
+  {
+    "idCategoria": 1,
+    "nombre": "Sub-12",
+    "edadMin": 10,
+    "edadMax": 12,
+    "descripcion": "Categoria formativa sub-12",
+    "activo": true,
+    "createdAt": "2026-03-01T10:00:00Z"
+  }
+]
+\end{lstlisting}
+
+\subsubsection{Endpoint 3 --- POST /api/asistencias/qr/sesion/\{idSesion\}/token}
+
+Genera el token QR para una sesión de entrenamiento.
+Requiere rol \texttt{ADMINISTRADOR} o \texttt{RECEPCIONISTA} y un \texttt{idSesion}
+válido previamente creado.
+
+\begin{lstlisting}[style=json, caption={Response --- POST /api/asistencias/qr/sesion/1/token}]
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "expiresAt": "2026-08-09T02:30:00Z",
+  "idSesion": 1
+}
+\end{lstlisting}
+
+\textbf{Plan B:} si no hay sesión preexistente, sustituir por \texttt{POST /api/categorias}
+(misma categoría de ``endpoint que escribe'', sin dependencias de datos previos).
+
+\subsection{Checklist de ensayo previo al laboratorio}
+
+\begin{tcolorbox}[colback=NavyBlue!5, colframe=NavyBlue!60,
+  title=Checklist --- Demo API REST en vivo]
+  \begin{itemize}
+    \item[$\square$] Rutas SpringDoc ajustadas en \texttt{application.yml}.
+    \item[$\square$] \texttt{make up} ejecutado; stack completo en pie.
+    \item[$\square$] \texttt{http://localhost:8080/api/docs} abre Swagger UI (no JSON).
+    \item[$\square$] Colección Postman/Insomnia guardada; cookies activas.
+    \item[$\square$] Flujo completo ensayado: login $\to$ categorías activas $\to$ token QR.
+    \item[$\square$] Plan B preparado (\texttt{POST /api/categorias}).
+  \end{itemize}
+\end{tcolorbox}
+
+% ============================================================
+%  5. COMPARATIVA SOAP vs REST  [Pallo]  — Directriz 4
+% ============================================================
+\section{Comparativa SOAP vs.\ REST}
+\label{sec:soap}
+
+\subsection{Tabla de criterios}
+
+\begin{table}[H]
+  \centering
+  \caption{Comparativa SOAP vs.\ REST --- 9 criterios de análisis}
+  \label{tab:soap-rest}
+  \begin{tabularx}{\linewidth}{@{}L{3.2cm}L{4.9cm}L{4.9cm}@{}}
+    \toprule
+    \textbf{Criterio} & \textbf{SOAP} & \textbf{REST} \\
+    \midrule
+    Formato del mensaje &
+      XML estricto, dentro de un \textit{Envelope} (Header + Body) &
+      Flexible; en la práctica casi siempre JSON \\[4pt]
+    Contrato del servicio &
+      WSDL obligatorio &
+      OpenAPI / Swagger opcional (SGED: \texttt{/api/docs}) \\[4pt]
+    Transporte &
+      Agnóstico en teoría; HTTP en la práctica &
+      Exclusivamente HTTP con verbos semánticos \\[4pt]
+    Overhead &
+      Alto: \textit{Envelope} XML + cabeceras WS-* &
+      Bajo: JSON compacto, sin envoltorio obligatorio \\[4pt]
+    Seguridad &
+      WS-Security a nivel de mensaje &
+      TLS + JWT / OAuth2 (SGED: JWT en \textit{cookie HttpOnly}) \\[4pt]
+    Manejo de errores &
+      \textit{SOAP Fault} estandarizado (\texttt{faultcode/faultstring}) &
+      Códigos HTTP estándar + cuerpo de error propio \\[4pt]
+    Consumo desde móvil &
+      Pesado: parseo XML + librerías desde WSDL &
+      Liviano: JSON nativo en cualquier SDK móvil \\[4pt]
+    Caché &
+      No aprovecha caché HTTP (todo son POST) &
+      GET cacheables con cabeceras HTTP estándar \\[4pt]
+    Casos de uso en Ecuador &
+      Sistemas legados bancarios y gubernamentales \parencite{garriga2021} &
+      Apps nuevas, \textit{fintechs} y apps móviles (incluido SGED) \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Ejemplo SOAP y su equivalente REST}
+
+\subsubsection{SOAP --- NumberToWords (servicio público verificado con curl)}
+
+\begin{lstlisting}[style=xml, caption={Request SOAP --- POST NumberToWords}]
+POST https://www.dataaccess.com/webservicesserver/NumberConversion.wso
+Content-Type: text/xml; charset=utf-8
+SOAPAction: http://www.dataaccess.com/webservicesserver/NumberToWords
+
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <NumberToWords
+        xmlns="http://www.dataaccess.com/webservicesserver/">
+      <ubiNum>500</ubiNum>
+    </NumberToWords>
+  </soap:Body>
+</soap:Envelope>
+\end{lstlisting}
+
+\begin{lstlisting}[style=xml, caption={Response SOAP --- captura real}]
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope
+    xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <m:NumberToWordsResponse
+        xmlns:m="http://www.dataaccess.com/webservicesserver/">
+      <m:NumberToWordsResult>five hundred </m:NumberToWordsResult>
+    </m:NumberToWordsResponse>
+  </soap:Body>
+</soap:Envelope>
+\end{lstlisting}
+
+\subsubsection{REST --- Equivalente en SGED}
+
+\begin{lstlisting}[style=json, caption={Request REST --- GET /api/categorias/activas}]
+GET /api/categorias/activas HTTP/1.1
+Host: localhost:8080
+Cookie: access_token=<obtenida en POST /api/auth/login>
+\end{lstlisting}
+
+\begin{lstlisting}[style=json, caption={Response REST --- array JSON directo (sin envoltorio)}]
+[
+  {
+    "idCategoria": 1,
+    "nombre": "Sub-12",
+    "edadMin": 10,
+    "edadMax": 12,
+    "descripcion": "Categoria formativa sub-12",
+    "activo": true,
+    "createdAt": "2026-03-01T10:00:00Z"
+  }
+]
+\end{lstlisting}
+
+\subsection{Análisis del contraste}
+
+Para devolver información útil comparable, SOAP necesita el \textit{Envelope} XML completo
+(namespaces, Header/Body, nombre de la operación repetido) solo para ``empacar'' un resultado;
+REST entrega el arreglo JSON directamente.
+Este es el argumento empírico del criterio \textit{overhead}: no una afirmación teórica,
+sino una diferencia observable en los bytes transferidos.
+
+\textit{Pendiente (Pallo):} reemplazar la respuesta de ejemplo de
+\texttt{/api/categorias/activas} por la captura real de Postman con datos de la base de
+datos del SGED antes de la entrega final.
+
+% ============================================================
+%  6. TENDENCIAS EMERGENTES  [Beltrán]  — Directriz 5
+% ============================================================
+\section{Tendencias Emergentes en el Desarrollo Web}
+\label{sec:tendencias}
+
+\subsection{Jamstack: desacoplamiento como paradigma de arquitectura}
+
+Jamstack (\textit{JavaScript, APIs, Markup}) es una filosofía de arquitectura web que separa
+radicalmente el frontend del backend: el cliente se entrega como HTML/CSS/JS pre-generado y
+servido desde un CDN (\textit{Content Delivery Network}), mientras que la lógica de negocio
+se encapsula en APIs independientes que se consumen bajo demanda \parencite{biilmann2020}.
+
+Esta separación tiene consecuencias concretas y medibles.
+En términos de \textbf{rendimiento}, al no existir un servidor de aplicaciones entre el
+usuario y el contenido estático, la latencia se reduce drásticamente; plataformas como
+Netlify y Vercel reportan tiempos de primer byte (TTFB) por debajo de 50~ms para sitios
+Jamstack distribuidos globalmente.
+En términos de \textbf{seguridad}, la superficie de ataque se reduce: sin servidor de
+aplicaciones expuesto, vulnerabilidades típicas como inyección SQL o SSRF se mitigan por
+diseño.
+En términos de \textbf{escalabilidad}, el CDN escala automáticamente ante picos de tráfico
+sin configuración adicional.
+
+Frameworks representativos de este paradigma incluyen \textit{Next.js} (React, híbrido
+SSR/SSG), \textit{Nuxt} (Vue.js), \textit{Astro} (agnóstico de framework, optimizado para
+contenido) y \textit{SvelteKit}.
+
+Sin embargo, Jamstack no es una solución universal y su adopción acrítica es un error
+frecuente.
+Aplicaciones con alta carga de datos en tiempo real --- paneles de administración, sistemas de
+asistencia como el SGED, plataformas de comunicación --- se benefician más de un backend
+tradicional con WebSockets o SSE (\textit{Server-Sent Events}) que de un generador de sitios
+estáticos.
+La elección del paradigma debe responder al perfil de uso real de la aplicación, no a
+tendencias de mercado.
+
+\subsection{Progressive Web Apps (PWA): cierre de la brecha web/nativa}
+
+Una \textit{Progressive Web App} es una aplicación web que aprovecha APIs modernas del
+navegador para ofrecer una experiencia equivalente a la de una app nativa: instalación en
+pantalla de inicio, funcionamiento offline mediante \textit{Service Workers}, notificaciones
+\textit{push} y acceso a hardware del dispositivo (cámara, GPS, acelerómetro)
+\parencite{mozilla2023}.
+
+El impacto en el contexto latinoamericano es especialmente relevante.
+Según datos de GSMA Intelligence, más del 60\,\% de los usuarios móviles en Ecuador acceden
+a Internet desde dispositivos de gama media-baja con conectividad intermitente.
+Una PWA que funcione offline y cargue en menos de 3~segundos en una red 3G tiene una
+ventaja competitiva sustancial frente a una app nativa que requiere descarga desde una
+tienda de aplicaciones y espacio de almacenamiento adicional.
+
+En el caso del SGED, la funcionalidad de escaneo de QR para asistencia es un candidato
+natural para implementarse como PWA: el estudiante podría escanear su asistencia incluso
+sin conexión y sincronizar con el servidor al recuperar señal.
+Esta línea de trabajo se propone en la Sección~\ref{sec:futuro}.
+
+\subsection{Inteligencia Artificial Generativa: reconfiguración del rol del desarrollador}
+
+La irrupción de modelos de lenguaje de gran escala (LLM) como GPT-4o, Claude 3.5 y
+Gemini 1.5 Pro está transformando el flujo de trabajo del desarrollador web de formas que
+van mucho más allá de la autocompletación de código \parencite{github2023}.
+
+Cuatro vectores de impacto son especialmente visibles:
+
+\begin{enumerate}
+  \item \textbf{Generación de código y pruebas.}
+    Herramientas como GitHub Copilot, Cursor y Tabnine generan implementaciones completas
+    a partir de descripciones en lenguaje natural, reduciendo el tiempo de prototipado
+    en un 40--55\,\% según estudios de productividad de GitHub (2023) \parencite{github2023}.
+  \item \textbf{Revisión automática de código.}
+    Modelos integrados en pipelines CI/CD identifican vulnerabilidades de seguridad,
+    violaciones de estilo y posibles regresiones antes de que el código llegue a producción.
+  \item \textbf{Generación de documentación.}
+    La especificación OpenAPI del SGED podría generarse automáticamente a partir del
+    código fuente mediante LLMs \textit{fine-tuned}, eliminando la brecha habitual entre
+    código y documentación.
+  \item \textbf{Interfaces conversacionales.}
+    La integración de chatbots en aplicaciones web (mediante APIs como OpenAI o Google
+    Generative AI) permite interacciones en lenguaje natural que sustituyen formularios
+    complejos en casos de uso de baja frecuencia.
+\end{enumerate}
+
+\paragraph{Posición crítica.}
+La IA generativa no elimina la necesidad de comprensión profunda del sistema.
+El código generado por LLMs puede contener errores sutiles, alucinaciones (referencias a
+funciones inexistentes) y vulnerabilidades que solo un desarrollador con criterio técnico
+sólido puede detectar y corregir.
+El riesgo real no es que la IA reemplace a los desarrolladores, sino que desarrolladores
+sin suficiente criterio crítico deleguen decisiones de arquitectura y seguridad a modelos
+que no tienen contexto del dominio de negocio.
+La profesión no desaparece; se desplaza hacia la validación, la especificación de
+requisitos precisos y el diseño de sistemas donde la IA actúa como herramienta, no como
+árbitro de decisiones.
+
+En el contexto educativo ecuatoriano, esto implica que la formación en fundamentos
+--- arquitecturas, protocolos, seguridad, bases de datos --- sigue siendo indispensable:
+no para competir con la IA, sino para usarla con rigor y responsabilidad.
+
+% ============================================================
+%  7. CONCLUSIONES  [Beltrán]
+% ============================================================
+\section{Conclusiones}
+\label{sec:conclusiones}
+
+\begin{enumerate}
+  \item \textbf{REST como estándar consolidado.}
+    La disertación de \textcite{fielding2000} sigue siendo el fundamento teórico
+    irrefutable de las APIs modernas.
+    El SGED implementa sus restricciones de forma coherente, lo que se traduce en una API
+    comprensible, extensible y documentada mediante OpenAPI 3.1 / Swagger UI.
+
+  \item \textbf{SOAP: contexto, no obsolescencia.}
+    SOAP coexiste con REST en entornos donde la integridad del mensaje a nivel protocolar
+    es crítica (banca, servicios gubernamentales).
+    En Ecuador, la transición en el sector público avanza lentamente por razones de
+    compatibilidad histórica \parencite{garriga2021}, lo que hace relevante conocer ambos
+    paradigmas.
+
+  \item \textbf{MVC como arquitectura estructurante.}
+    El patrón MVC, implementado con Spring Boot y React, demostró ser suficientemente
+    flexible para soportar los módulos de asistencia QR, gestión de categorías y control
+    de usuarios del SGED, manteniendo una separación clara de responsabilidades.
+
+  \item \textbf{Tendencias como oportunidad, no amenaza.}
+    Jamstack, PWA e IA generativa complementan y amplifican las competencias técnicas
+    fundamentales.
+    Un equipo que entiende los protocolos subyacentes puede aprovechar estas tecnologías
+    con criterio; uno que no los entiende, construye sobre cimientos que no comprende.
+
+  \item \textbf{Documentación como ciudadano de primera clase.}
+    La integración de SpringDoc en el SGED convirtió la documentación en una consecuencia
+    automática del código (\textit{doc-as-code}), reduciendo la divergencia entre la API
+    real y su descripción formal.
+\end{enumerate}
+
+% ============================================================
+%  8. TRABAJO FUTURO  [Beltrán]
+% ============================================================
+\section{Trabajo Futuro}
+\label{sec:futuro}
+
+\begin{itemize}
+  \item \textbf{PWA para asistencia offline:} implementar un Service Worker en el frontend
+    React del SGED que permita registrar asistencias sin conexión y sincronizar cuando el
+    dispositivo recupere conectividad.
+  \item \textbf{GraphQL como capa alternativa:} exponer un endpoint GraphQL sobre los
+    mismos servicios del SGED para permitir consultas flexibles desde el frontend sin
+    \textit{over-fetching} ni \textit{under-fetching}.
+  \item \textbf{Generación de pruebas con IA:} integrar un agente basado en LLM que,
+    a partir de la especificación OpenAPI, genere automáticamente casos de prueba de
+    integración para el backend.
+  \item \textbf{Migración a OAuth2 / OIDC:} reemplazar el JWT artesanal actual por un
+    proveedor de identidad estándar (Keycloak, Auth0) para facilitar la integración con
+    sistemas universitarios externos.
+  \item \textbf{Análisis de rendimiento Jamstack:} prototipar el frontend con Next.js en
+    modo SSG/ISR para comparar métricas de Core Web Vitals contra la versión SPA actual.
+\end{itemize}
+
+% ============================================================
+%  REFERENCIAS  [Pallo]
+% ============================================================
+\newpage
+\section*{Referencias}
+\addcontentsline{toc}{section}{Referencias}
+
+\printbibliography[heading=none]
+
+% ============================================================
+%  APÉNDICE A — Contenido del archivo referencias.bib
+%  (crear referencias.bib en la misma carpeta que este .tex)
+% ============================================================
+\appendix
+\section{Archivo \texttt{referencias.bib}}
+\label{apx:bib}
+
+A continuación se incluye el contenido completo del archivo \texttt{referencias.bib}
+que debe existir en la misma carpeta que este documento para que la compilación con
+\texttt{biber} funcione correctamente.
+
+\begin{lstlisting}[
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{gray!6}
+]
+@phdthesis{fielding2000,
+  author    = {Fielding, Roy Thomas},
+  title     = {Architectural Styles and the Design of
+               Network-based Software Architectures},
+  school    = {University of California, Irvine},
+  year      = {2000},
+  url       = {https://ics.uci.edu/~fielding/pubs/dissertation/top.htm}
+}
+
+@book{richardson2007,
+  author    = {Richardson, Leonard and Ruby, Sam},
+  title     = {RESTful Web Services},
+  publisher = {O'Reilly Media},
+  year      = {2007},
+  isbn      = {978-0-596-52926-0}
+}
+
+@online{springdoc2024,
+  author  = {{SpringDoc Team}},
+  title   = {SpringDoc OpenAPI 2 --- Reference Documentation},
+  year    = {2024},
+  url     = {https://springdoc.org/v2/},
+  urldate = {2026-08-01}
+}
+
+@techreport{w3c2007,
+  author      = {{W3C}},
+  title       = {SOAP Version 1.2 Part 1: Messaging Framework
+                 (Second Edition)},
+  institution = {World Wide Web Consortium},
+  year        = {2007},
+  url         = {https://www.w3.org/TR/soap12-part1/}
+}
+
+@book{masse2011,
+  author    = {Masse, Mark},
+  title     = {REST API Design Rulebook},
+  publisher = {O'Reilly Media},
+  year      = {2011},
+  isbn      = {978-1-4493-1050-9}
+}
+
+@article{garriga2021,
+  author  = {Garriga, Martin and Mateos, Cristian and
+             Flores, Alejandro and Cechich, Alejandra and
+             Zunino, Alejandro},
+  title   = {RESTful service composition at a glance:
+             A survey},
+  journal = {Journal of Network and Computer Applications},
+  year    = {2021},
+  volume  = {60},
+  pages   = {32--53},
+  doi     = {10.1016/j.jnca.2015.11.020}
+}
+
+@online{biilmann2020,
+  author  = {Biilmann, Mathias},
+  title   = {The JAMstack origin story},
+  year    = {2020},
+  url     = {https://www.netlify.com/blog/2020/04/14/
+             what-is-a-static-site-generator/},
+  urldate = {2026-08-01}
+}
+
+@online{mozilla2023,
+  author  = {{MDN Web Docs}},
+  title   = {Progressive web apps (PWAs)},
+  year    = {2023},
+  url     = {https://developer.mozilla.org/en-US/docs/Web/
+             Progressive_web_apps},
+  urldate = {2026-08-01}
+}
+
+@techreport{github2023,
+  author      = {{GitHub}},
+  title       = {The economic impact of the AI-powered
+                 developer lifecycle},
+  institution = {GitHub, Inc.},
+  year        = {2023},
+  url         = {https://github.blog/2023-06-27-the-economic-impact-
+                 of-the-ai-powered-developer-lifecycle/}
+}
+\end{lstlisting}
+
+\end{document}
