@@ -597,10 +597,53 @@ Una PWA que funcione offline y cargue en menos de 3~segundos en una red 3G tiene
 ventaja competitiva sustancial frente a una app nativa que requiere descarga desde una
 tienda de aplicaciones y espacio de almacenamiento adicional.
 
-En el caso del SGED, la funcionalidad de escaneo de QR para asistencia es un candidato
-natural para implementarse como PWA: el estudiante podría escanear su asistencia incluso
-sin conexión y sincronizar con el servidor al recuperar señal.
-Esta línea de trabajo se propone en la Sección~\ref{sec:futuro}.
+El SGED ya incorpora esta tecnología: el frontend Angular incluye el paquete
+\texttt{@angular/service-worker} y una configuración activa en
+\texttt{frontend/ngsw-config.json}.
+
+\subsubsection{Demo funcional --- Service Worker en el SGED}
+
+El archivo \texttt{ngsw-config.json} define dos estrategias de caché complementarias
+alineadas con el perfil de uso real de la aplicación:
+
+\begin{lstlisting}[style=json, caption={Estrategias de caché del Service Worker (\texttt{frontend/ngsw-config.json})}]
+{
+  "dataGroups": [
+    {
+      "name": "catalogos",
+      "urls": ["/api/categorias/activas", "/api/estados_generales"],
+      "cacheConfig": {
+        "strategy": "performance",
+        "maxSize": 20,
+        "maxAge": "1d"
+      }
+    },
+    {
+      "name": "sesiones",
+      "urls": ["/api/evaluaciones/sesion/**"],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "timeout": "3s",
+        "maxSize": 30,
+        "maxAge": "12h"
+      }
+    }
+  ],
+  "navigationRequestStrategy": "performance"
+}
+\end{lstlisting}
+
+La estrategia \textit{performance} (caché primero) aplica a los catálogos
+--- categorías activas y estados generales --- que rara vez cambian: la pantalla
+abre al instante aunque no haya red disponible.
+La estrategia \textit{freshness} (red primero con \textit{timeout} de 3 segundos)
+aplicada a los datos de evaluaciones por sesión refleja una decisión de diseño
+concreta: la asistencia varía durante el entrenamiento, por lo que es preferible
+intentar la red primero; pero si tarda más de 3 segundos --- escenario habitual en
+canchas deportivas con cobertura débil --- el Service Worker devuelve el último
+valor conocido en lugar de dejar al entrenador esperando con la pantalla en blanco.
+Esta combinación hace que el SGED funcione de forma utilizable en condiciones de
+conectividad intermitente sin ningún cambio en la lógica de la aplicación.
 
 \subsection{Inteligencia Artificial Generativa: reconfiguración del rol del desarrollador}
 
@@ -688,9 +731,11 @@ no para competir con la IA, sino para usarla con rigor y responsabilidad.
 \label{sec:futuro}
 
 \begin{itemize}
-  \item \textbf{PWA para asistencia offline:} implementar un Service Worker en el frontend
-    React del SGED que permita registrar asistencias sin conexión y sincronizar cuando el
-    dispositivo recupere conectividad.
+  \item \textbf{PWA --- registro offline de asistencias:} el SGED ya cuenta con un
+    Service Worker activo (\texttt{ngsw-config.json}) orientado a caché de catálogos
+    y sesiones. El siguiente paso es extenderlo con una cola de escritura offline que
+    permita registrar asistencias sin conexión y sincronizarlas con el servidor al
+    recuperar señal, completando así el ciclo PWA para el flujo de entrenamiento.
   \item \textbf{GraphQL como capa alternativa:} exponer un endpoint GraphQL sobre los
     mismos servicios del SGED para permitir consultas flexibles desde el frontend sin
     \textit{over-fetching} ni \textit{under-fetching}.
