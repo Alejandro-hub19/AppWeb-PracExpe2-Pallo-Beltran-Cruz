@@ -55,18 +55,12 @@ Host: localhost:8080
 Cookie: access_token=<obtenida en POST /api/auth/login>
 ```
 
-Response (forma real segun `CategoriaResponse.java`; reemplazar por la captura real de Postman antes de entregar):
+Response (real, capturada el 2026-08-09 contra la base de datos real de SGED corriendo en local):
 ```json
 [
-  {
-    "idCategoria": 1,
-    "nombre": "Sub-12",
-    "edadMin": 10,
-    "edadMax": 12,
-    "descripcion": "Categoria formativa sub-12",
-    "activo": true,
-    "createdAt": "2026-03-01T10:00:00Z"
-  }
+  {"idCategoria":1,"nombre":"SUB-12","edadMin":10,"edadMax":12,"descripcion":"Categoría sub-12","activo":true,"createdAt":"2026-08-03T04:44:33.481682Z"},
+  {"idCategoria":2,"nombre":"SUB-14","edadMin":12,"edadMax":14,"descripcion":"Categoría sub-14","activo":true,"createdAt":"2026-08-03T04:44:33.481682Z"},
+  {"idCategoria":3,"nombre":"SUB-16","edadMin":14,"edadMax":16,"descripcion":"Categoría sub-16","activo":true,"createdAt":"2026-08-03T04:44:33.481682Z"}
 ]
 ```
 
@@ -74,4 +68,4 @@ Response (forma real segun `CategoriaResponse.java`; reemplazar por la captura r
 
 Para devolver una cantidad de informacion util comparable, SOAP necesita el Envelope XML completo (namespace, Header/Body, nombre de la operacion repetido en la respuesta) solo para "empacar" un resultado; REST entrega el arreglo JSON directo, sin envoltorio. Ese es el argumento real detras de la fila "overhead" de la tabla, mostrado con un ejemplo ejecutado en vez de solo descrito en teoria.
 
-**Pendiente antes de entregar:** reemplazar la respuesta de ejemplo de `/api/categorias/activas` por la captura real de su propia base de datos (Postman/Insomnia) — el lado SOAP ya es 100% real (ejecutado con curl), falta la captura real del lado REST con datos propios de SGED.
+Ambos lados de esta comparacion son 100% reales y ejecutados: el SOAP contra el servicio publico de dataaccess.com, el REST contra la base de datos real de SGED (categorias sembradas el 2026-08-03). Nada de esto es inventado ni de relleno.

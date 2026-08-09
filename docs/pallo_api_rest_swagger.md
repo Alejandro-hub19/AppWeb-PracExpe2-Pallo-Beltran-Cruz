@@ -2,20 +2,9 @@
 
 Basado en el backend real de SGED (`SGED_APPWEB`, Spring Boot 3.2 / Java 21 / springdoc-openapi). No es una app de prueba: son endpoints reales del PFC.
 
-## 1. Ajuste necesario en SGED_APPWEB (aplicar allá, no en este repo)
+## 1. Ajuste de Swagger — YA APLICADO y verificado en vivo el 2026-08-09
 
-Hoy, en `backend/src/main/resources/application.yml`, la configuracion es:
-
-```yaml
-springdoc:
-  api-docs:
-    path: /api/docs
-  swagger-ui:
-    path: /api/swagger-ui.html
-    operationsSorter: method
-```
-
-`/api/docs` sirve el JSON crudo de OpenAPI; la interfaz interactiva (Swagger UI) vive en `/api/swagger-ui.html`. La directriz pide literalmente "Swagger UI accesible en /api/docs", asi que hay que intercambiar las dos rutas:
+Antes, en `backend/src/main/resources/application.yml`, `/api/docs` servia el JSON crudo de OpenAPI y la interfaz interactiva (Swagger UI) vivia en `/api/swagger-ui.html`. La directriz pide literalmente "Swagger UI accesible en /api/docs", asi que se intercambiaron las dos rutas:
 
 ```yaml
 springdoc:
@@ -26,7 +15,24 @@ springdoc:
     operationsSorter: method
 ```
 
-Con este cambio, entrar a `http://localhost:8080/api/docs` abre directamente Swagger UI (no el JSON). Es un cambio de 2 lineas en tu repo real `SGED_APPWEB` — aplicarlo ahi, volver a levantar (`make up` o reiniciar el backend) y comprobar que carga antes del laboratorio.
+Ese cambio solo, por si solo, dejo `/api/docs.json` bloqueado con 401 — `SecurityConfig.java` tenia el permitAll apuntando al nombre de ruta viejo. Segundo ajuste, tambien ya aplicado:
+
+```java
+// backend/src/main/java/org/uteq/backend/config/SecurityConfig.java (linea ~60)
+.requestMatchers("/api/docs/**", "/api/docs.json", "/api/swagger-ui/**",
+        "/api/swagger-ui.html", "/swagger-ui/**",
+        "/v3/api-docs/**").permitAll()
+```
+
+Verificado en vivo contra el backend real corriendo en `localhost:8080`:
+- `GET /api/docs` -> 302 -> `/api/swagger-ui/index.html` (200, text/html) — Swagger UI carga bien
+- `GET /api/docs.json` -> 200, application/json — el spec crudo sigue publico para quien lo necesite (Postman puede importarlo)
+
+Nota sobre `make`: esta maquina no tiene GNU Make instalado, asi que `make up` del README no funciona tal cual. Usar directo:
+```bash
+docker compose up -d --build
+```
+(mismo efecto que el objetivo `up` del Makefile, menos el mensaje bonito de bienvenida al final). Si prefieren tener `make`, se instala aparte (choco install make, o WSL).
 
 ## 2. Los 3 endpoints para la demo en vivo
 
@@ -45,35 +51,34 @@ Credenciales semilla de `db/seed.sql` (ver README de SGED_APPWEB). Postman guard
 
 **2) GET /api/categorias/activas** — lectura simple, con datos reales
 
-Requiere rol ADMINISTRADOR, ENTRENADOR o RECEPCIONISTA (admin cumple). Forma real de la respuesta (segun `CategoriaResponse.java`):
+Requiere rol ADMINISTRADOR, ENTRENADOR o RECEPCIONISTA (admin cumple). Respuesta real, capturada en vivo el 2026-08-09:
 ```json
 [
-  {
-    "idCategoria": 1,
-    "nombre": "Sub-12",
-    "edadMin": 10,
-    "edadMax": 12,
-    "descripcion": "Categoria formativa sub-12",
-    "activo": true,
-    "createdAt": "2026-03-01T10:00:00Z"
-  }
+  {"idCategoria":1,"nombre":"SUB-12","edadMin":10,"edadMax":12,"descripcion":"Categoría sub-12","activo":true,"createdAt":"2026-08-03T04:44:33.481682Z"},
+  {"idCategoria":2,"nombre":"SUB-14","edadMin":12,"edadMax":14,"descripcion":"Categoría sub-14","activo":true,"createdAt":"2026-08-03T04:44:33.481682Z"},
+  {"idCategoria":3,"nombre":"SUB-16","edadMin":14,"edadMax":16,"descripcion":"Categoría sub-16","activo":true,"createdAt":"2026-08-03T04:44:33.481682Z"}
 ]
 ```
-Los valores son de ejemplo — al ejecutarlo de verdad va a devolver lo que tengan cargado en su base.
 
-**3) POST /api/asistencias/qr/sesion/{idSesion}/token** — la pieza distintiva del sistema (emision de token QR para asistencia)
+**3) POST /api/categorias** — endpoint que escribe (crear una categoria)
 
-Requiere rol ADMINISTRADOR o RECEPCIONISTA, y un `idSesion` real que ya exista (de una sesion de entrenamiento creada de antemano). Vale la pena mostrar este porque no es CRUD generico.
+Se probo tambien en vivo: crea con 201 y el `idCategoria` real asignado. Este es el recomendado como tercer endpoint por sobre el de QR — ver nota abajo.
 
-Alternativa mas simple si no quieren depender de tener una sesion de entrenamiento ya creada: cambiar el endpoint 3 por `POST /api/categorias` (crear una categoria nueva) — mismo espiritu de "endpoint que escribe", sin depender de datos previos.
+```json
+{"nombre":"SUB-18","edadMin":16,"edadMax":18,"descripcion":"Categoria sub-18","activo":true}
+```
 
-Opcional / avanzado (no como uno de los 3 obligatorios, pero impresiona si sale bien): completar el flujo QR con `POST /api/asistencias/qr/marcar` desde una sesion de ESTUDIANTE aparte — necesita dos usuarios logueados a la vez (dos entornos de Postman), mas riesgoso de ensayar sin fallar en vivo.
+Nota sobre el endpoint QR (`POST /api/asistencias/qr/sesion/{idSesion}/token`): probado tambien, pero `GET /api/sesiones/hoy` devolvio `[]` — hoy no hay ninguna sesion de entrenamiento sembrada en la base, asi que no hay un `idSesion` valido para usar todavia. Si quieren usar el QR como tercer endpoint en vez de la categoria (es mas vistoso), hay que crear una sesion de entrenamiento antes del laboratorio (`POST /api/sesiones`) para tener un `idSesion` real a mano. Si no, `POST /api/categorias` ya esta verificado y no depende de nada mas.
+
+Importante para el ensayo: si prueban crear una categoria de prueba, bórrenla despues (`DELETE /api/categorias/{id}`) para no dejar basura en los datos que van a mostrarle al docente — asi se hizo aqui (se creo "TEST-BORRAR" con id 4 y se elimino de inmediato; la base quedo con las mismas 3 categorias de siempre).
 
 ## 3. Checklist de ensayo (la directriz dice "no improvisados")
 
-- [ ] Aplicado el cambio de rutas de Swagger en `application.yml` (en SGED_APPWEB)
-- [ ] `make up` corrido ANTES del laboratorio, stack completo arriba
-- [ ] `http://localhost:8080/api/docs` abre Swagger UI (no el JSON)
-- [ ] Coleccion de Postman/Insomnia guardada con las 3 requests, cookies funcionando
-- [ ] Ensayado el orden login -> categorias/activas -> qr/token (o categorias POST), de corrido, sin errores
-- [ ] Plan B si algun endpoint falla (reintentar login, revisar que el idSesion exista)
+- [x] Cambio de rutas de Swagger en `application.yml` — aplicado y verificado en vivo
+- [x] Fix de `SecurityConfig.java` para que `/api/docs.json` no quede bloqueado — aplicado y verificado
+- [x] `http://localhost:8080/api/docs` abre Swagger UI (no el JSON) — confirmado
+- [x] Los 3 endpoints (login, categorias/activas, categorias POST) probados en vivo con curl, con datos reales
+- [ ] Decidir si el 3er endpoint es `POST /api/categorias` (ya probado) o el QR (falta crear una sesion de entrenamiento primero)
+- [ ] Coleccion de Postman/Insomnia armada con las 3 requests (los pasos de arriba ya estan verificados, falta pasarlos a Postman)
+- [ ] Ensayar el orden completo una vez mas en Postman, de corrido, sin errores
+- [ ] `.env` copiado (`cp .env.example .env`) y stack arriba con `docker compose up -d --build` (`make` no esta instalado en esta maquina) ANTES del laboratorio
