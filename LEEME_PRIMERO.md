@@ -1,6 +1,6 @@
 # Nota de origen y autoria
 
-Esta carpeta es una **copia (snapshot)** del proyecto real `SGED_APPWEB`, sincronizada por ultima vez el 2026-08-09 para la Practica Experimental Unidad IV. No es un proyecto nuevo ni escrito desde cero aqui.
+Todo lo que ves en la raiz de este repo (backend/, frontend/, db/, docs/, etc.) es una **copia (snapshot)** del proyecto real `SGED_APPWEB`, sincronizada por ultima vez el 2026-08-09 para la Practica Experimental Unidad IV. No es un proyecto nuevo ni escrito desde cero aqui — ver [`README.md`](README.md) para que es especificamente este repo.
 
 **Repositorio original, con el historial de commits real:**
 https://github.com/DarwinSM21/SGED_APPWEB
@@ -13,4 +13,4 @@ https://github.com/DarwinSM21/SGED_APPWEB
 
 **Que NO incluye:** trabajo en curso sin commitear en el repo real (por ejemplo una funcionalidad de notificaciones a representantes, todavia sin terminar) — eso se queda fuera a propósito, no es parte de la entrega de Unidad IV.
 
-Esta copia existe solo para tener el codigo accesible desde el repo de la practica (demo del API REST, Swagger, etc. — ver `../docs/pallo_api_rest_swagger.md`). No reemplaza al repositorio original como fuente de verdad del PFC; los cambios de verdad se hacen alla.
+Esta copia existe solo para tener el codigo accesible desde el repo de la practica (demo del API REST, Swagger, etc. — ver [`docs/pallo_api_rest_swagger.md`](docs/pallo_api_rest_swagger.md)). No reemplaza al repositorio original como fuente de verdad del PFC; los cambios de verdad se hacen alla. El README propio de SGED (antes de esta copia) quedo como [`README-SGED-original.md`](README-SGED-original.md).
