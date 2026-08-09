@@ -1,0 +1,40 @@
+/vendor
+node_modules/
+# Angular
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# Spring Boot
+backend/target/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+*.err
+server_log.txt
+
+# Env
+.env
+# Lighthouse: directorio temporal de lhci (los reportes archivados van en
+# docs/mediciones/lighthouse/)
+.lighthouseci/
+
+# Python
+__pycache__/
+*.pyc
+
+# LaTeX (docs/informe/) - binarios generados; las fuentes .tex/.bib SI se versionan
+docs/informe/*.aux
+docs/informe/*.log
+docs/informe/*.out
+docs/informe/*.toc
+docs/informe/*.bbl
+docs/informe/*.blg
+docs/informe/p1.log
+docs/informe/p2.log
+docs/informe/p3.log
+docs/informe/bib.log
