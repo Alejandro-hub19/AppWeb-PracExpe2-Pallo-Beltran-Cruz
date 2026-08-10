@@ -1,0 +1,92 @@
+# Evidencia REV-07 — Apache Bench (ab)
+
+Referencia: docs/observaciones/REVISION-BELTRAN.md, hallazgo REV-07.
+
+La guía de Práctica Experimental Unidad IV exige explícitamente una prueba de carga con
+Apache Bench (`ab`), con métricas P50, P95, P99, throughput y tasa de error. El proyecto SGED
+documenta pruebas de carga con k6 (`k6/listado-estudiantes.js`), pero no con `ab`. Esta
+evidencia la generó Beltrán como verificación de caja negra (sin modificar el proyecto
+revisado), contra una instancia de SGED levantada desde clonación limpia con
+`docker compose up -d --build`.
+
+Endpoint probado: `GET /api/categorias/activas` (requiere autenticación; se usó un token JWT
+de la cuenta `admin` obtenido vía `POST /api/auth/login`).
+
+Comando:
+```
+ab -n 500 -c 50 -H "Authorization: Bearer $token" http://localhost:8080/api/categorias/activas
+```
+
+## Salida completa
+
+```
+This is ApacheBench, Version 2.3 <$Revision: 1903618 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking localhost (be patient)
+Completed 100 requests
+Completed 200 requests
+Completed 300 requests
+Completed 400 requests
+Completed 500 requests
+Finished 500 requests
+
+Server Software:
+Server Hostname:        localhost
+Server Port:            8080
+
+Document Path:          /api/categorias/activas
+Document Length:        457 bytes
+
+Concurrency Level:      50
+Time taken for tests:   2.366 seconds
+Complete requests:      500
+Failed requests:        0
+Total transferred:      445000 bytes
+HTML transferred:       228500 bytes
+Requests per second:    211.33 [#/sec] (mean)
+Time per request:       236.602 [ms] (mean)
+Time per request:       4.732 [ms] (mean, across all concurrent requests)
+Transfer rate:          183.67 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    1   0.6      1       3
+Processing:    34  227 150.8    183     798
+Waiting:       20  223 149.2    179     798
+Total:         35  228 150.8    184     799
+
+Percentage of the requests served within a certain time (ms)
+  50%    184
+  66%    228
+  75%    273
+  80%    309
+  90%    473
+  95%    597
+  98%    650
+  99%    701
+ 100%    799 (longest request)
+```
+
+## Resumen de métricas
+
+| Métrica | Valor |
+|---|---|
+| Endpoint | `GET /api/categorias/activas` |
+| Requests totales | 500 |
+| Concurrencia | 50 |
+| Requests per second | 211.33 req/s |
+| Fallos | 0 / 500 |
+| P50 | 184 ms |
+| P95 | 597 ms |
+| P99 | 701 ms |
+| Máximo | 799 ms |
+
+## Nota
+
+Corrida previa descartada: el primer intento se ejecutó con un token JWT expirado, lo que
+produjo `Non-2xx responses: 500` (los 500 requests recibieron `401 Unauthorized`, no el
+recurso real). Se regeneró el token y se confirmó manualmente con una petición individual
+(`Invoke-RestMethod`) antes de repetir el benchmark, que es el que queda documentado arriba
+(`Failed requests: 0`, sin línea `Non-2xx responses`).
