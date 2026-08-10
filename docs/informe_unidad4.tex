@@ -210,40 +210,50 @@ reflexiona sobre las tendencias emergentes; y las Secciones~\ref{sec:conclusione
 y~\ref{sec:futuro} presentan las conclusiones y el trabajo futuro, respectivamente.
 
 % ============================================================
-%  2. REVISIÓN BIBLIOGRÁFICA  [Cruz]  — Directriz 1
+%  2. REVISIÓN BIBLIOGRÁFICA  [Beltrán]  — Directriz 1
 % ============================================================
 \section{Revisión Bibliográfica}
 \label{sec:biblio}
 
-De acuerdo con la Directriz~1, se consultaron al menos cinco fuentes académicas primarias,
-incluyendo la disertación seminal de \textcite{fielding2000} sobre REST y la documentación oficial
-del framework utilizado (\textcite{springdoc2024}).
+Como parte de la Directriz~1, esta sección revisa seis fuentes académicas y técnicas primarias
+--- superando el mínimo de cinco exigido --- y las contrasta directamente contra el código y el
+comportamiento observado del SGED durante la verificación en vivo documentada en la
+Sección~\ref{sec:mvc}. La disertación de \textcite{fielding2000} y la documentación oficial de
+\textcite{springdoc2024} se incluyen por ser, respectivamente, la fuente seminal de REST y la
+librería que el propio backend usa para exponer su documentación.
 
 \subsection{Fielding (2000) --- REST como estilo arquitectónico}
 
-\textcite{fielding2000} definió en su disertación doctoral la arquitectura
-\textit{Representational State Transfer} (REST) como un conjunto de seis restricciones:
-cliente--servidor, \textit{stateless}, caché, interfaz uniforme, sistema por capas y código
-bajo demanda (opcional).
-Estas restricciones, cuando se aplican de forma coherente, producen sistemas con alta
-escalabilidad y evolvabilidad \parencite{fielding2000}.
-El SGED adopta las cinco restricciones obligatorias: sesiones de usuario almacenadas en el
-cliente mediante JWT en \textit{cookie HttpOnly} (stateless), respuestas cacheables para
-\texttt{GET /api/categorias/activas} e interfaz uniforme basada en sustantivos en plural.
+\textcite{fielding2000} define REST no como un protocolo sino como un conjunto de seis
+restricciones arquitectónicas --- cliente--servidor, \textit{stateless}, cacheable, interfaz
+uniforme, sistema por capas y código bajo demanda (opcional) --- cuya combinación produce
+sistemas escalables y evolucionables sin acoplar cliente y servidor a una implementación
+concreta \parencite{fielding2000}. Verificando el SGED contra estas seis restricciones:
+la autenticación es efectivamente \textit{stateless} (el JWT viaja en una \textit{cookie}
+\texttt{HttpOnly}, no en sesión de servidor); la interfaz es mayormente uniforme
+(\texttt{/api/categorias}, \texttt{/api/entrenadores}, sustantivos en plural); pero la
+restricción de \textit{cacheable} no se cumple de forma consistente --- no se observaron
+cabeceras \texttt{Cache-Control} en las respuestas inspeccionadas por Swagger durante la
+verificación en vivo --- lo cual es una brecha real entre la teoría de Fielding y la
+implementación, no solo una observación de manual.
 
 \subsection{Richardson y Ruby (2007) --- REST Práctico}
 
-\textcite{richardson2007} ampliaron el trabajo de Fielding con una guía práctica sobre el
-diseño de APIs RESTful, introduciendo el concepto de \textit{Resource-Oriented Architecture}
-(ROA) y el modelo de madurez REST por niveles.
-Destacan que el uso correcto de los verbos HTTP y la hipermedia (HATEOAS) diferencia una API
-verdaderamente RESTful de una simple API HTTP \parencite{richardson2007}.
+\textcite{richardson2007} amplían a Fielding con una guía operativa de diseño de APIs
+RESTful, introduciendo la \textit{Resource-Oriented Architecture} (ROA) y un modelo de
+madurez por niveles (Richardson Maturity Model). Bajo ese modelo, el SGED alcanza el
+Nivel~2 (recursos + verbos HTTP correctos) pero no el Nivel~3 (HATEOAS): las respuestas de
+\texttt{GET /api/categorias/\{id\}} devuelven el recurso sin enlaces a acciones relacionadas
+(por ejemplo, a las sesiones de esa categoría), algo que sí exigiría un API verdaderamente
+madura según \textcite{richardson2007}.
 
 \subsection{SpringDoc OpenAPI 2 --- Documentación oficial}
 
-\textcite{springdoc2024} describe la integración de SpringDoc OpenAPI 2 con Spring Boot 3,
-que es la librería utilizada en el SGED para exponer la especificación OpenAPI 3.1 en
-\texttt{/api/docs.json} y la interfaz Swagger UI en \texttt{/api/docs}.
+\textcite{springdoc2024} documenta la integración de SpringDoc OpenAPI~2 con Spring Boot~3,
+la librería que el SGED usa para exponer su especificación OpenAPI en
+\texttt{/api/docs.json} y la interfaz interactiva Swagger UI en \texttt{/api/docs}. Esta
+configuración no es la ruta por defecto de la librería (que sería
+\texttt{/swagger-ui/index.html}), sino un ajuste explícito del equipo:
 
 \begin{lstlisting}[style=yaml, caption={Configuración SpringDoc en \texttt{application.yml}}]
 springdoc:
@@ -254,84 +264,156 @@ springdoc:
     operationsSorter: method
 \end{lstlisting}
 
+Verificado en vivo: acceder a la ruta por defecto de SpringDoc produce el error
+\textit{``Failed to load remote configuration''}, porque la especificación OpenAPI
+efectivamente vive en \texttt{/api/docs.json}, no en la ruta que SpringDoc asume por
+convención. Es un detalle de configuración correcto pero no evidente para quien no conoce
+de antemano el ajuste --- vale la pena documentarlo explícitamente en el \texttt{README} del
+proyecto, algo que actualmente no ocurre.
+
 \subsection{W3C (2007) --- Especificación SOAP 1.2}
 
-\textcite{w3c2007} define el protocolo SOAP 1.2, que establece un modelo de mensajería
-basado en XML con un \textit{Envelope} obligatorio (Header + Body), independiente del
-transporte subyacente.
-La especificación WSDL 2.0, también normativa del W3C, describe el contrato del servicio
-de forma tipada y \textit{machine-readable}.
+\textcite{w3c2007} normaliza el protocolo SOAP~1.2: mensajería basada en XML con un
+\textit{Envelope} obligatorio (\textit{Header} + \textit{Body}), independiente del
+transporte subyacente, y descrita formalmente mediante WSDL. Esta fuente sustenta la
+comparativa SOAP vs.\ REST desarrollada por Pallo en la Sección~\ref{sec:soap}; se cita aquí
+porque el contraste entre el tipado fuerte y \textit{machine-readable} de WSDL frente al
+contrato implícito (y, como se documenta en la Sección~\ref{sec:mvc}, a veces inconsistente)
+de la API REST del SGED es un argumento recurrente en el análisis crítico de esta unidad.
 
 \subsection{Masse (2011) --- REST API Design Rulebook}
 
-\textcite{masse2011} sistematiza las buenas prácticas de diseño de APIs RESTful en un conjunto
-de reglas prescriptivas que cubren nomenclatura de URIs, uso de métodos HTTP, gestión de
-errores con códigos de estado y versionado.
-Las reglas de Masse se aplicaron en el SGED: URIs en minúsculas con guiones medios,
-sustantivos en plural (\texttt{/api/categorias}), respuestas de error consistentes.
+\textcite{masse2011} sistematiza reglas prescriptivas de diseño REST: nomenclatura de URIs
+en minúsculas con sustantivos en plural, uso semántico de verbos HTTP, y --- el punto más
+relevante para esta revisión --- gestión de errores mediante códigos de estado
+\textbf{consistentes y significativos}. El SGED cumple la convención de nomenclatura
+(\texttt{/api/categorias}, \texttt{/api/entrenadores}), pero la verificación en vivo
+(Sección~\ref{sec:mvc}) encontró una violación directa de este principio de Masse: un
+parámetro de \textit{sort} inválido en \texttt{GET /api/categorias} no produce un
+\texttt{400 Bad Request} (el código correcto para una entrada mal formada del cliente) sino
+un \texttt{500 Internal Server Error}, que según \textcite{masse2011} debe reservarse para
+fallos genuinos del servidor, no para validación de entrada ausente.
 
 \subsection{Garriga et al.\ (2021) --- Adopción de APIs en América Latina}
 
-\textcite{garriga2021} analizan el estado de adopción de APIs REST en proyectos de software
-en América Latina, concluyendo que Ecuador mantiene servicios SOAP legados en entidades
-gubernamentales y bancarias por razones de compatibilidad histórica, aunque el sector privado
-y las \textit{fintechs} han migrado mayoritariamente a REST.
+\textcite{garriga2021} documentan que, pese a la migración mayoritaria de la industria hacia
+REST, servicios SOAP legados persisten en banca y sector público de la región por
+compatibilidad histórica con sistemas ya certificados. Esto contextualiza por qué el ejercicio
+comparativo de la Sección~\ref{sec:soap} sigue siendo relevante en 2026 y no un ejercicio
+puramente académico: un desarrollador ecuatoriano tiene probabilidad real de integrar un
+servicio SOAP del sector público durante su carrera profesional.
 
 % ============================================================
-%  3. APLICACIÓN MVC COMPLETA  [Cruz]  — Directriz 2
+%  3. APLICACIÓN MVC COMPLETA  [Beltrán]  — Directriz 2
 % ============================================================
 \section{Aplicación MVC Completa --- SGED}
 \label{sec:mvc}
 
 \subsection{Descripción general}
 
-El SGED es un sistema web para la gestión de estudiantes deportivos, que cubre los módulos
-de autenticación, categorías, sesiones de entrenamiento y control de asistencia mediante
-generación y lectura de códigos QR.
+El SGED es un sistema web para la gestión de una escuela deportiva, que cubre autenticación
+y roles, catálogo de categorías, registro de estudiantes y representantes, sesiones de
+entrenamiento y control de asistencia mediante códigos QR. Esta sección documenta la
+verificación en vivo realizada personalmente sobre el sistema levantado con Docker Compose
+en un entorno limpio, incluyendo el análisis crítico exigido por la actividad de revisión
+entre pares: qué funciona correctamente, qué no, y por qué.
 
 \subsection{Arquitectura MVC}
 
-La aplicación implementa el patrón Modelo--Vista--Controlador en dos capas independientes:
-
 \begin{itemize}
-  \item \textbf{Modelo + Controlador (Backend):} Spring Boot 3.2 / Java 21.
-    Los modelos son entidades JPA mapeadas a PostgreSQL 16.
-    Los controladores REST exponen los recursos con \texttt{@RestController} y
-    \texttt{@RequestMapping("/api/...")}.
-    La capa de servicio (\texttt{@Service}) encapsula la lógica de negocio.
-  \item \textbf{Vista (Frontend):} Angular 21 (Angular CLI).
-    La comunicación con el backend se realiza mediante el \texttt{HttpClient} de Angular con
-    \texttt{withCredentials: true} para el manejo automático de cookies.
+  \item \textbf{Modelo + Controlador (Backend):} Spring Boot 3.2 / Java 21. Las entidades JPA
+    se mapean a esquemas PostgreSQL 16 separados por dominio
+    (\texttt{seguridad}, \texttt{deportivo}, \texttt{academico}). Los controladores REST
+    exponen los recursos con \texttt{@RestController} + \texttt{@RequestMapping("/api/...")},
+    con autorización declarativa por rol vía \texttt{@PreAuthorize}. La capa de servicio
+    (\texttt{@Service}) encapsula la lógica de negocio.
+  \item \textbf{Vista (Frontend):} Angular (\textit{standalone components}). La comunicación
+    con el backend usa el \texttt{HttpClient} de Angular con \texttt{withCredentials: true}
+    para el manejo automático de la \textit{cookie} JWT.
 \end{itemize}
 
-\subsection{Módulos de la Entrega 1B}
+\subsection{Módulos verificados}
 
 \begin{table}[h!]
   \centering
-  \caption{Módulos implementados en la Entrega 1B del SGED}
+  \caption{Módulos del SGED y resultado de la verificación en vivo}
   \label{tab:modulos}
-  \begin{tabularx}{\linewidth}{@{}lL{4.5cm}L{5cm}@{}}
+  \begin{tabularx}{\linewidth}{@{}lL{4cm}L{5.5cm}@{}}
     \toprule
-    \textbf{Módulo} & \textbf{Backend (Spring Boot)} & \textbf{Frontend (Angular)} \\
+    \textbf{Módulo} & \textbf{Backend} & \textbf{Resultado verificado} \\
     \midrule
-    Autenticación   & \texttt{AuthController} + JWT HttpOnly & Página Login, gestión de sesión \\
-    Categorías      & \texttt{CategoriaController} CRUD      & Listado, alta y baja \\
-    Sesiones        & \texttt{SesionController} + CRUD       & Calendario de sesiones \\
-    Asistencia / QR & \texttt{AsistenciaController} + token QR & Scanner QR en Angular \\
-    Usuarios        & \texttt{UsuarioController} + roles     & Gestión de usuarios y permisos \\
+    Autenticación    & \texttt{AuthController} + JWT \textit{cookie} & Correcto: login, sesión y \textit{logout} funcionan de punta a punta. \\
+    Registro de estudiante & \texttt{EstudianteController}         & Correcto: alta completa sin errores. \\
+    Alta de usuario  & \texttt{AuthController.registro}             & Funcional, pero con un defecto de UX (Hallazgo~1). \\
+    Categorías (backend) & \texttt{CategoriaController} CRUD        & CRUD completo y correcto vía API; con un defecto de robustez (Hallazgo~2). \\
+    Categorías (frontend) & --- & Sin interfaz de administración (Hallazgo~3). \\
+    Sesiones         & \texttt{SesionEntrenamientoController}       & Bloqueado para ENTRENADOR hasta resolver un defecto de flujo (Hallazgo~5); funcional tras el fix. \\
     \bottomrule
   \end{tabularx}
 \end{table}
 
 \subsection{Verificación en laboratorio}
 
-Para la sesión de laboratorio, el docente verificará la aplicación ejecutando:
+El sistema se levantó con \texttt{docker compose up -d --build} sobre una copia limpia del
+repositorio, confirmando los cuatro contenedores (\texttt{sged\_postgres},
+\texttt{sged\_redis}, \texttt{sged\_backend}, \texttt{sged\_frontend}) en estado
+\textit{healthy}. A partir de ahí se ejecutó el flujo completo: login como \texttt{admin},
+registro de un estudiante real, alta de un usuario con rol \texttt{ENTRENADOR}, y navegación
+por Swagger UI para inspeccionar cada recurso expuesto por la API.
+
+Esta verificación no se limitó a confirmar que el sistema \textit{corre}, sino a documentar
+con evidencia reproducible dónde el comportamiento observado se aparta del esperado. Se
+encontraron cinco hallazgos, ordenados de menor a mayor severidad:
+
 \begin{enumerate}
-  \item \texttt{make up} (o \texttt{arrancar.bat} en Windows) para levantar el stack completo.
-  \item Navegar a \texttt{http://localhost:4200} y autenticarse con las credenciales de
-    \texttt{db/seed.sql}.
-  \item Recorrer los módulos de categorías, sesiones y asistencia QR en tiempo real.
+  \item \textbf{Mensaje de error genérico e impreciso (severidad media, UX).} El formulario de
+    alta de usuario traduce \emph{cualquier} respuesta \texttt{422} del backend al mismo texto
+    fijo (\textit{``la cédula debe tener 10 dígitos y la fecha de nacimiento ser pasada''}),
+    sin importar cuál campo violó realmente la validación. En la verificación, una cédula y
+    fecha de nacimiento válidas fueron señaladas como erróneas cuando el campo que en
+    realidad fallaba --- por formato de correo inválido en ``Usuario (correo de acceso)''--- no
+    se mencionaba en absoluto. Código relevante:
+    \texttt{frontend/src/app/features/admin/crear-usuario.component.ts}, método
+    \texttt{mensajeDeError(status)}.
+  \item \textbf{\texttt{500} en vez de \texttt{400} ante un parámetro inválido (severidad
+    media, robustez).} \texttt{GET /api/categorias} vincula el parámetro de consulta
+    \texttt{sort} directamente a un \texttt{Pageable} de Spring Data sin validarlo; un valor
+    de \texttt{sort} que no corresponde a una columna real de la entidad produce una
+    excepción SQL no controlada que el manejador global traduce en un
+    \texttt{500 Internal Server Error}, cuando la causa es una entrada mal formada del
+    cliente y debería responder \texttt{400}, según \textcite{masse2011}
+    (Sección~\ref{sec:biblio}).
+  \item \textbf{CRUD de Categorías sin interfaz (severidad media, funcionalidad incompleta).}
+    El backend expone \texttt{GET}, \texttt{POST}, \texttt{PUT} y \texttt{DELETE} completos
+    para \texttt{/api/categorias}, pero el frontend Angular únicamente consume
+    \texttt{GET /api/categorias/activas} para llenar un \textit{dropdown} en el formulario de
+    registro de estudiante. No existe ninguna pantalla desde la cual un administrador pueda
+    crear, editar o dar de baja una categoría sin usar la API directamente.
+  \item \textbf{Etiqueta de campo ambigua (severidad baja, UX).} El campo llamado
+    ``Usuario (correo de acceso)'' es, en el backend, un correo electrónico obligatorio
+    (\texttt{@Email} en \texttt{RegisterRequest}), pero la etiqueta no lo deja claro y el
+    campo no tiene validación de formato en el cliente antes de enviar el formulario --- el
+    usuario descubre el requisito solo al recibir el mensaje genérico del Hallazgo~1.
+  \item \textbf{Alta de Entrenador incompleta por diseño (severidad alta, funcionalidad
+    crítica).} Crear una cuenta con rol \texttt{ENTRENADOR} desde el panel de administración
+    solo inserta una fila en \texttt{seguridad.usuarios}; el sistema mantiene una tabla
+    separada, \texttt{deportivo.entrenadores}, con una relación \texttt{@OneToOne} obligatoria
+    hacia ese usuario (campo profesional: especialidad, años de experiencia, certificación).
+    El rol se otorga y permite el acceso al módulo de Sesiones, pero la lógica de negocio
+    --- que busca el registro de \texttt{Entrenador} vinculado, no solo el rol --- rechaza
+    toda acción con el mensaje \textit{``No hay un entrenador asociado a esta cuenta''}. El
+    endpoint que crea ese vínculo (\texttt{POST /api/entrenadores}) existe y funciona
+    correctamente, pero está restringido a \texttt{ADMINISTRADOR} y no tiene ninguna pantalla
+    en el frontend: la única forma de completarlo es invocando la API directamente. Se
+    reprodujo el defecto completo (alta de usuario ENTRENADOR $\rightarrow$ bloqueo confirmado
+    en ``Mis sesiones'' $\rightarrow$ vínculo creado vía Swagger con
+    \texttt{POST /api/entrenadores} $\rightarrow$ módulo de Sesiones verificado funcional) para
+    aislar la causa raíz y confirmar la solución, no solo reportar el síntoma.
 \end{enumerate}
+
+Fuera de estos cinco hallazgos, el flujo de autenticación, el registro de estudiantes y la
+documentación Swagger UI (una vez corregida la ruta de acceso, ver Hallazgo relacionado en la
+Sección~\ref{sec:biblio}, subsección SpringDoc) funcionaron correctamente en cada intento.
 
 % ============================================================
 %  4. API REST + SWAGGER UI  [Pallo]  — Directriz 3
