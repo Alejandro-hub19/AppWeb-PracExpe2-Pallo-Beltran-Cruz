@@ -1,10 +1,13 @@
 @echo off
 REM ============================================================
-REM  compilar.bat — Genera informe_unidad4.pdf con LaTeX local
-REM  Requiere: MiKTeX o TeX Live instalado en PATH
-REM  Ejecutar desde la carpeta docs\
+REM  compilar.bat — Genera informe_unidad4.pdf con MiKTeX
+REM  Ejecutar desde la carpeta docs\ con: .\compilar.bat
 REM ============================================================
 setlocal
+
+REM -- Agrega MiKTeX al PATH de esta sesion (instalacion de usuario) --
+set MIKTEX=%LOCALAPPDATA%\Programs\MiKTeX\miktex\bin\x64
+set PATH=%MIKTEX%;%PATH%
 
 set DOC=informe_unidad4
 

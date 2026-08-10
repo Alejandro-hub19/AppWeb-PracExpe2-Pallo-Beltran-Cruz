@@ -40,10 +40,12 @@
 
 % ── Colores y cajas ────────────────────────────────────────
 \usepackage[dvipsnames]{xcolor}
+\usepackage{amssymb}
 \usepackage{tcolorbox}
 \tcbuselibrary{skins,breakable}
 
 % ── Código fuente ──────────────────────────────────────────
+\usepackage{caption}
 \usepackage{listings}
 \lstdefinestyle{json}{
   language=,
@@ -78,7 +80,7 @@
 
 % ── Gráficos e imágenes ────────────────────────────────────
 \usepackage{graphicx}
-\usepackage{float}
+
 
 % ── Hipervínculos ──────────────────────────────────────────
 \usepackage[
@@ -304,7 +306,7 @@ La aplicación implementa el patrón Modelo--Vista--Controlador en dos capas ind
 
 \subsection{Módulos de la Entrega 1B}
 
-\begin{table}[H]
+\begin{table}[h!]
   \centering
   \caption{Módulos implementados en la Entrega 1B del SGED}
   \label{tab:modulos}
@@ -436,7 +438,7 @@ válido previamente creado.
 
 \subsection{Tabla de criterios}
 
-\begin{table}[H]
+\begin{table}[h!]
   \centering
   \caption{Comparativa SOAP vs.\ REST --- 9 criterios de análisis}
   \label{tab:soap-rest}
