@@ -1320,6 +1320,41 @@ un cambio posterior. Es también la razón por la que la clave del servicio de I
 módulo se deshabilita por omisión, y un argumento adicional a favor de haber elegido una API
 externa que no exige credencial \parencite{swebok2024}.
 
+\subsection{Reflexión sobre el proceso de aprendizaje}
+
+Cada integrante consigna a continuación las lecciones técnicas que considera más relevantes del
+desarrollo del PFC, los errores que resultaron más costosos y qué haría de forma distinta en un
+proyecto futuro.
+
+\subsubsection*{Pallo Pinto Alejandro Daniel}
+
+Mi rol en el proyecto fue seguridad y validación: el diseño de autenticación con JWT en cookie
+\texttt{HttpOnly}, la auditoría OWASP y la batería de pruebas. Precisamente por eso, el error que
+más me marcó ocurrió en mi propio terreno.
+
+El 24 de julio un \textit{merge} reintrodujo los tokens en el cuerpo de la respuesta del login,
+anulando la protección que la cookie \texttt{HttpOnly} existe para dar. Nadie lo notó, y esa fue
+la versión que el docente evaluó; la observación nos llegó de vuelta como retroalimentación y yo
+la corregí recién el 4 de agosto. Lo grave no es el \textit{merge}, eso pasa en cualquier equipo:
+es que yo era el responsable de las pruebas y ninguna cubría la condición de la que dependía mi
+propio diseño de seguridad. La suite ya superaba el umbral de cobertura que nos habíamos fijado,
+y aun así nadie preguntaba lo más básico: ¿la respuesta del login trae un token?
+
+Hoy lo haría distinto en un punto concreto: toda decisión de seguridad registrada en un ADR
+debería nacer junto a una prueba que falle si alguien la revierte. Un \textit{fix} sin prueba no
+es un \textit{fix}, es una intención que sobrevive hasta el siguiente \textit{merge}. La cobertura
+alta me dio una confianza que no estaba justificada, porque mide cuánto código se ejecuta, no si
+lo que importa está protegido. La trazabilidad de este episodio queda en \texttt{OBSERVACIONES.md}
+bajo el código OBS-13, con los tres \textit{commits} implicados.
+
+\subsubsection*{Beltrán}
+
+\textit{Pendiente de redacción por el integrante (mínimo 100 palabras).}
+
+\subsubsection*{Cruz}
+
+\textit{Pendiente de redacción por el integrante (mínimo 100 palabras).}
+
 % ============================================================
 %  7. CONCLUSIONES  [Beltrán]
 % ============================================================
