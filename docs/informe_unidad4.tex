@@ -670,8 +670,144 @@ verificado en verde localmente (\texttt{mvnw test -Dtest=CategoriaSortValidation
 % ============================================================
 %  4. API REST + SWAGGER UI  [Pallo]  — Directriz 3
 % ============================================================
-\section{API REST Documentada --- Swagger UI}
+\section{Diseño de la API REST: Principios de Fielding, JWT y OpenAPI}
 \label{sec:api}
+
+\subsection{Los seis principios de Fielding en el diseño de la API}
+
+\textcite{fielding2000} no define REST como un formato sino como un conjunto de seis
+restricciones arquitectónicas. La API del SGED las adopta de forma desigual, y esa desigualdad
+está analizada una por una ---con el costo concreto de cada incumplimiento--- en el
+Anexo~\ref{apx:anexoC}. En síntesis: \textit{cliente--servidor} y \textit{sistema por capas} se
+cumplen por completo; \textit{sin estado} e \textit{interfaz uniforme} de forma parcial;
+\textit{cacheable} no se cumple, porque Spring Security emite
+\texttt{Cache-Control: no-store} en los endpoints autenticados; y \textit{código bajo demanda}
+no aplica por ser opcional. Los dos apartados siguientes desarrollan las dos restricciones sobre
+las que el equipo tomó decisiones explícitas de diseño: la interfaz uniforme, a través de las
+URIs, y la ausencia de estado, a través del JWT.
+
+\subsection{Diseño de URIs: reglas aplicadas y anti-patrones detectados}
+
+La regla central es que una URI identifica un \textbf{recurso} ---un sustantivo--- y que la
+operación la expresa el verbo HTTP, no la ruta \parencite{masse2011}. La API sigue esa regla en
+su núcleo: \texttt{GET /api/estudiantes} lista, \texttt{POST /api/estudiantes} crea,
+\texttt{PUT /api/estudiantes/\{id\}} actualiza y \texttt{DELETE /api/estudiantes/\{id\}} da de
+baja. La jerarquía se expresa por anidamiento cuando el recurso hijo solo existe en el contexto
+del padre, como en \texttt{GET /api/lesiones/estudiante/\{idEstudiante\}} o
+\texttt{POST /api/representantes/\{id\}/estudiantes/\{idEstudiante\}}.
+
+Ahora bien, una revisión honesta del mapa completo de rutas ---dieciséis controladores---
+revela cuatro desviaciones que conviene declarar antes de que las señale el evaluador.
+
+\begin{table}[h!]
+  \centering
+  \caption{Anti-patrones detectados en las URIs del SGED}
+  \label{tab:uris}
+  \begin{tabularx}{\linewidth}{@{}L{3.1cm}L{5.4cm}L{5.6cm}@{}}
+    \toprule
+    \textbf{Anti-patrón} & \textbf{Casos en la API} & \textbf{Costo real} \\
+    \midrule
+    Verbo en la ruta &
+      \texttt{/api/estudiantes/operaciones/desactivar-categoria},
+      \texttt{/api/consentimientos/\{id\}/revocar},
+      \texttt{/api/lesiones/\{id\}/alta},
+      \texttt{/api/asistencias/qr/marcar} &
+      Son transiciones de estado, no recursos. Un diseño estricto las modelaría como
+      \texttt{PATCH} sobre el recurso o como un sub-recurso de estado. El costo es de
+      previsibilidad: el cliente no puede deducir la ruta, tiene que consultarla. \\[3pt]
+    Singular frente a plural &
+      \texttt{/api/representante} (portal del representante autenticado) convive con
+      \texttt{/api/representantes} (CRUD administrativo) &
+      La distinción es real ---uno es autoservicio, el otro gestión--- pero la diferencia de una
+      sola letra la vuelve indistinguible de una errata. Un nombre como
+      \texttt{/api/representantes/me} habría expresado lo mismo sin ambigüedad. \\[3pt]
+    Convención mixta &
+      \texttt{/api/estados\_generales} usa \textit{snake\_case}; el resto de la API usa una sola
+      palabra en minúsculas &
+      Rompe la uniformidad y obliga a recordar la excepción. \\[3pt]
+    Ausencia de versionado &
+      Ninguna ruta lleva \texttt{/v1/}, ni se negocia versión por cabecera o parámetro &
+      Hoy el costo es bajo porque el frontend se despliega junto al backend. Deja de serlo en
+      cuanto exista un consumidor externo: un cambio incompatible rompería sin aviso a la
+      colección Postman versionada y a cualquier integración. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+De las tres estrategias de versionado que suelen compararse ---por ruta (\texttt{/api/v1/}), por
+cabecera (\texttt{Accept-Version}) y por parámetro de consulta---, la primera sería la adecuada
+aquí: es la más visible en registros y en la propia colección Postman, y no exige que el cliente
+recuerde enviar nada adicional. Se registra como trabajo pendiente y no como decisión tomada.
+
+\subsection{JWT: estructura, flujo y revocación}
+
+Un JSON Web Token tiene tres partes separadas por puntos y codificadas en Base64URL. La
+\textbf{cabecera} declara el algoritmo de firma; el \textbf{payload} transporta las
+afirmaciones (\textit{claims}); la \textbf{firma} es el HMAC de las dos anteriores con la clave
+del servidor, y es lo que impide alterar el contenido. El SGED firma con \textbf{HS256}
+(HMAC-SHA-256), que es lo que la librería selecciona a partir de una clave simétrica de al menos
+256 bits.
+
+\begin{lstlisting}[style=json, caption={Payload real emitido por JwtService (valores de ejemplo)}]
+{
+  "sub":  "admin",              // usuario autenticado
+  "rol":  "ADMINISTRADOR",      // claim propio: autoridad para @PreAuthorize
+  "type": "access",             // access | refresh: impide usar uno por el otro
+  "iss":  "sged-backend",       // emisor, validado con requireIssuer
+  "aud":  "sged-frontend",      // audiencia, validada en isTokenValid
+  "jti":  "8f3c1e0a-...",       // identificador unico: la clave de la revocacion
+  "iat":  1786512000,
+  "exp":  1786515600            // 1 h para el access; 7 dias para el refresh
+}
+\end{lstlisting}
+
+El flujo completo se aparta del esquema de manual en un punto deliberado. El manual dice: el
+cliente guarda el token y lo envía en la cabecera \texttt{Authorization: Bearer}. El SGED
+\textbf{no hace eso}. Tras validar credenciales, el servidor emite el token dentro de una cookie
+\texttt{sged\_access} marcada \texttt{HttpOnly + Secure + SameSite=Strict}; el navegador la
+reenvía sola en cada petición y \texttt{JwtAuthenticationFilter} la lee del lado del servidor,
+verifica firma, emisor, audiencia y expiración, y puebla el contexto de seguridad. El frontend
+Angular nunca ve el token ni lo adjunta a mano. El motivo, registrado en los ADR-002 y ADR-007,
+es que un token legible por JavaScript convierte cualquier XSS en una toma de sesión inmediata.
+
+Queda entonces el problema que todo esquema \textit{stateless} arrastra: \textbf{un JWT firmado es
+válido hasta que expira}, y el servidor no tiene dónde ``borrarlo''. Las dos estrategias
+habituales son acortar mucho la vida del token y aceptar la ventana de riesgo, o mantener una
+lista de revocación. El SGED implementa la segunda con la clase
+\texttt{RedisBlacklistService}: al cerrar sesión, el \texttt{jti} del token se almacena en Redis
+con un TTL igual al tiempo que le restaba de vida, y el filtro rechaza cualquier token cuyo
+\texttt{jti} figure ahí. La entrada se autoelimina justo cuando el token habría caducado por sí
+solo, de modo que la lista nunca crece indefinidamente.
+
+Conviene ser explícito sobre lo que esto cuesta, porque es la contradicción que el Anexo~C
+señala: consultar una lista de revocación es, por definición, consultar estado del servidor, así
+que la API no es estrictamente \textit{stateless}. Se aceptó a cambio de que cerrar sesión
+signifique algo. La alternativa ---no revocar--- habría preservado la pureza del principio y
+dejado sesiones robadas vivas hasta una hora.
+
+\subsection{OpenAPI 3 como contrato: Swagger UI y Redoc}
+
+La especificación OpenAPI cumple entre frontend y backend la misma función que el WSDL cumple en
+SOAP: describir el contrato en un formato legible por máquinas, de modo que un consumidor pueda
+generar un cliente sin leer el código del servidor. En el SGED no se escribe a mano: springdoc la
+deriva de las anotaciones de Spring MVC, de las firmas de los métodos y de los \textit{records}
+de DTO, y la publica en \texttt{/api/docs.json}. Que el contrato se genere del código y no de un
+documento paralelo evita la divergencia habitual entre lo que la API promete y lo que hace.
+
+Cada operación queda descrita por su \texttt{operationId}, sus \texttt{parameters} ---con
+nombre, ubicación y tipo---, su \texttt{requestBody} y el conjunto de \texttt{responses} con el
+esquema de cada código de estado. Para el endpoint de clima incorporado en la
+Sección~\ref{sec:api-externa}, por ejemplo, la especificación generada expone la ruta
+\texttt{/api/clima/entrenamiento} con sus tres parámetros opcionales (\texttt{fecha},
+\texttt{desde} y \texttt{hasta}) sin que se haya escrito una sola anotación de documentación.
+
+Sobre esa misma especificación pueden montarse dos interfaces de propósito distinto.
+\textbf{Swagger UI} es interactiva: permite ejecutar peticiones desde el navegador, lo que la
+hace la herramienta adecuada para desarrollo y para una demostración en vivo como la de esta
+práctica, y es la que el SGED sirve en \texttt{/api/docs}. \textbf{Redoc} genera documentación
+estática de tres columnas, más legible y mejor indexable, pero sin capacidad de ejecución: es la
+opción razonable para publicar documentación a consumidores externos, precisamente porque no
+ofrece un botón que dispare llamadas reales contra el servidor.
 
 \subsection{Configuración de Swagger UI}
 
