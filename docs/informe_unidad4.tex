@@ -1501,7 +1501,28 @@ bajo el código OBS-13, con los tres \textit{commits} implicados.
 
 \subsubsection*{Beltrán}
 
-\textit{Pendiente de redacción por el integrante (mínimo 100 palabras).}
+Mi rol en esta práctica fue distinto al de Pallo: no escribí el sistema, lo sometí a prueba
+como si fuera un usuario nuevo que nunca lo había visto. La lección técnica más importante no
+vino de un hallazgo grande, sino de un detalle pequeño que casi arruina mi propia evidencia:
+corrí mi primera prueba de Apache Bench contra \texttt{/api/categorias/activas} y obtuve
+``467 req/s'' con aparente normalidad --- hasta que noté la línea \texttt{Non-2xx responses:
+500}. Mi \textit{token} JWT había expirado, y estaba midiendo la velocidad con la que el
+servidor \emph{rechaza} peticiones, no la velocidad real del endpoint. De no revisar esa
+línea, habría entregado una métrica completamente falsa disfrazada de dato duro.
+
+El error más costoso en tiempo fue de otro tipo: al vincular manualmente un registro de
+\texttt{Entrenador} vía Swagger para reproducir el Hallazgo~5, invertí \texttt{idPersona} e
+\texttt{idUsuario} en el cuerpo de la petición. El sistema no lo rechazó con un error claro;
+simplemente vinculó el registro a la persona equivocada (\texttt{admin} en vez de mi propia
+cuenta), y solo lo noté porque revisé el campo \texttt{nombre} de la respuesta. Me enseñó que
+un \texttt{201 Created} no es sinónimo de ``hice lo correcto'': hay que verificar el contenido
+de la respuesta, no solo el código de estado.
+
+Si repitiera esta revisión, automatizaría el diagnóstico de sesión antes de cada corrida
+(un \textit{script} que valide el \textit{token} antes de correr \texttt{ab}), en vez de
+confiar en recordarlo manualmente. También pediría los identificadores del recurso en un
+formato que no permita invertirlos por accidente, como un objeto JSON con nombres de campo
+explícitos en cada endpoint de vinculación entre entidades, no solo IDs numéricos sueltos.
 
 \subsubsection*{Cruz}
 
