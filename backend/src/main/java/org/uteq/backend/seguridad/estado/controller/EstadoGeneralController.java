@@ -1,6 +1,7 @@
 package org.uteq.backend.seguridad.estado.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,6 +27,10 @@ public class EstadoGeneralController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ENTRENADOR')")
     public ResponseEntity<List<EstadoGeneralResponse>> listarTodos() {
-        return ResponseEntity.ok(estadoGeneralService.listarTodos());
+        // Catalogo estable: cacheable con revalidacion obligatoria por ETag
+        // (ver HttpCacheConfig).
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noCache().cachePrivate())
+                .body(estadoGeneralService.listarTodos());
     }
 }

@@ -77,6 +77,29 @@
   numbers=none,
   showstringspaces=false
 }
+\lstdefinestyle{java}{
+  language=Java,
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{NavyBlue},
+  commentstyle=\color{ForestGreen},
+  stringstyle=\color{BrickRed},
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{gray!5},
+  rulecolor=\color{gray!30},
+  numbers=none,
+  showstringspaces=false
+}
+\lstdefinestyle{bash}{
+  language=bash,
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{black!4},
+  rulecolor=\color{black!25},
+  numbers=none,
+  showstringspaces=false
+}
 
 % ── Gráficos e imágenes ────────────────────────────────────
 \usepackage{graphicx}
@@ -90,11 +113,13 @@
   urlcolor=BrickRed
 ]{hyperref}
 
-% ── Citas APA (biblatex + biber) ───────────────────────────
+% ── Citas IEEE (biblatex + biber) ──────────────────────────
+% La guia de la practica exige referencias en norma IEEE, no APA.
+% IEEE numera por orden de aparicion, de ahi sorting=none.
 \usepackage[
-  style=apa,
+  style=ieee,
   sortcites=true,
-  sorting=nyt,
+  sorting=none,
   backend=biber
 ]{biblatex}
 \addbibresource{referencias.bib}
@@ -122,9 +147,9 @@
 \begin{titlepage}
   \begin{center}
     \vspace*{1cm}
-    {\LARGE \textbf{UNIVERSIDAD TÉCNICA}}\\[0.3cm]
+    {\LARGE \textbf{UNIVERSIDAD TÉCNICA ESTATAL DE QUEVEDO}}\\[0.3cm]
     {\large Facultad de Ciencias de la Computación}\\[0.2cm]
-    {\large Carrera de Ingeniería en Tecnologías de la Información}\\[2cm]
+    {\large Carrera de Software (rediseño)}\\[2cm]
 
     \rule{\linewidth}{0.5mm}\\[0.4cm]
     {\huge \textbf{Práctica Experimental --- Unidad IV}}\\[0.3cm]
@@ -132,9 +157,11 @@
      SOAP y Tendencias Emergentes}\\[0.3cm]
     \rule{\linewidth}{0.5mm}\\[1.5cm]
 
-    {\large \textbf{Materia:} Aplicaciones Web}\\[0.3cm]
+    {\large \textbf{Asignatura:} Aplicaciones Web --- 5.\textsuperscript{to} nivel, paralelo A}\\[0.3cm]
+    {\large \textbf{Docente:} Guerrero Ulloa Gleiston Cicerón}\\[0.3cm]
     {\large \textbf{Grupo:} PFC --- Pallo $\cdot$ Beltrán $\cdot$ Cruz}\\[0.3cm]
-    {\large \textbf{PFC:} SGED --- Sistema de Gestión Estudiantil Deportiva}\\[2cm]
+    {\large \textbf{PFC:} SGED --- Sistema de Gestión Estudiantil Deportiva}\\[0.3cm]
+    {\large \textbf{Período académico:} 2026--2027 PPA}\\[2cm]
 
     \vfill
     {\large \today}
@@ -371,6 +398,134 @@ interfaz que las una --- el resultado observado en la verificación en vivo fue 
 estado intermedio inválido que ambas fuentes predicen.
 
 % ============================================================
+%  3. EL PATRÓN MVC Y LOS FRAMEWORKS MODERNOS  [Pallo]
+%     Corresponde al apartado 5.1 de la guía PE-U4
+% ============================================================
+\section{El Patrón MVC y su Implementación en Frameworks Modernos}
+\label{sec:mvc-teoria}
+
+\subsection{Historia y evolución del MVC}
+
+El patrón Modelo--Vista--Controlador nace en 1979, cuando \textcite{reenskaug1979} lo describe
+trabajando sobre Smalltalk-80 en Xerox PARC. Su formulación original responde a un problema de
+interfaces gráficas de escritorio: el \textit{modelo} representa el estado y el conocimiento del
+dominio, la \textit{vista} es una representación visual de ese modelo, y el \textit{controlador}
+es el intermediario que traduce los gestos del usuario ---teclado y ratón--- en operaciones sobre
+el modelo. La separación perseguía que un mismo modelo pudiera tener varias vistas simultáneas y
+que cambiar la presentación no obligara a tocar la lógica.
+
+La web adaptó el patrón cambiándole tres piezas. El controlador ya no atiende eventos de teclado
+sino \textbf{solicitudes HTTP} sin estado, que llegan aisladas unas de otras. La vista se
+renderiza en el servidor mediante un motor de plantillas, o bien ---como en el SGED--- se traslada
+por completo al cliente en forma de \textit{Single Page Application}, y el servidor pasa a
+devolver JSON en lugar de HTML. Y el modelo deja de ser una clase única para convertirse en una
+capa: entidades de dominio, repositorios que las persisten y servicios que encapsulan las reglas
+de negocio.
+
+De esa adaptación derivan dos variantes de uso corriente. \textbf{MVP}
+(Model--View--Presenter) elimina la referencia directa entre vista y modelo: todo pasa por el
+presentador, lo que facilita las pruebas al hacer la vista completamente pasiva. \textbf{MVVM}
+(Model--View--ViewModel) introduce enlace de datos bidireccional entre la vista y un modelo de
+vista, y es el esquema que siguen de facto los frameworks de SPA. Conviene señalar aquí una
+consecuencia honesta para este proyecto: el SGED es MVC en el backend y MVVM en el frontend
+Angular, de modo que hablar de ``la arquitectura MVC del sistema'' sin ese matiz sería impreciso.
+
+\subsection{El patrón Front Controller}
+
+Todos los frameworks MVC web comparten un punto de entrada único ---\texttt{index.php} en
+Laravel, \texttt{Program.cs} en ASP.NET Core, el \texttt{DispatcherServlet} en Spring MVC--- que
+\textcite{fowler2002} formaliza como \textit{Front Controller}. La razón es que cuatro
+preocupaciones son transversales a todas las peticiones y no deben duplicarse en cada
+manejador: el enrutamiento, la autenticación, el registro de actividad y el manejo de errores.
+Centralizarlas en un solo punto convierte esas responsabilidades en configuración en lugar de
+código repetido.
+
+El ciclo completo de una petición en el SGED, tomando
+\texttt{GET /api/categorias/activas} como caso real, recorre seis pasos:
+
+\begin{enumerate}
+  \item El \texttt{DispatcherServlet} de Spring MVC recibe la petición: es el Front Controller
+        del framework y el único punto de entrada del backend.
+  \item La cadena de filtros de Spring Security la intercepta antes de cualquier controlador.
+        \texttt{JwtAuthenticationFilter} ---registrado con \texttt{addFilterBefore(\dots,
+        UsernamePasswordAuthenticationFilter.class)} en \texttt{SecurityConfig}--- lee el JWT de
+        la cookie \textit{HttpOnly}, valida su firma y puebla el \texttt{SecurityContext}.
+  \item El \texttt{HandlerMapping} resuelve la ruta al método
+        \texttt{CategoriaController.listarActivas()} a partir de las anotaciones
+        \texttt{@RequestMapping} y \texttt{@GetMapping}.
+  \item El interceptor de seguridad de método evalúa
+        \texttt{@PreAuthorize("hasAnyRole(\dots)")} contra los roles del contexto y corta con
+        403 si no corresponde.
+  \item El controlador delega en \texttt{CategoriaService}, que consulta la caché en Redis y,
+        ante un fallo de caché, va a \texttt{CategoriaRepository} (Spring Data JPA) y de ahí a
+        PostgreSQL.
+  \item El valor devuelto pasa por un \texttt{HttpMessageConverter}, que con Jackson serializa
+        el \textit{record} \texttt{CategoriaResponse} a JSON y lo escribe en la respuesta.
+\end{enumerate}
+
+Obsérvese que los pasos 2 y 4 son exactamente las preocupaciones transversales que justifican el
+patrón: ningún controlador del SGED contiene código de autenticación.
+
+\subsection{Comparativa de frameworks MVC}
+
+\begin{table}[h!]
+  \centering
+  \caption{Comparativa de frameworks MVC web vigentes}
+  \label{tab:frameworks}
+  \begin{tabularx}{\linewidth}{@{}L{2.1cm}L{2.4cm}L{2.2cm}L{2.2cm}L{2.4cm}L{2.2cm}@{}}
+    \toprule
+    \textbf{Criterio} & \textbf{Laravel 11} & \textbf{Symfony 7} & \textbf{Spring Boot 3} &
+    \textbf{ASP.NET Core 8} & \textbf{Django 5} \\
+    \midrule
+    Lenguaje & PHP 8.2+ & PHP 8.2+ & Java 17/21 & C\# 12 & Python 3.10+ \\[3pt]
+    Paradigma & Convención sobre configuración & Explícito, muy configurable &
+      Autoconfiguración con anulación explícita & Convención con inyección explícita &
+      Convención (\textit{batteries included}) \\[3pt]
+    ORM incluido & Eloquent (Active Record) & Doctrine (Data Mapper) &
+      Spring Data JPA / Hibernate & Entity Framework Core & Django ORM \\[3pt]
+    Motor de plantillas & Blade & Twig & Thymeleaf & Razor & Django Templates \\[3pt]
+    Ecosistema & Muy amplio, orientado a productividad & Amplio, componentes reutilizables &
+      Enterprise, muy extenso & Integrado con el ecosistema Microsoft &
+      Amplio en ciencia de datos \\[3pt]
+    Rendimiento (Round 22) & Franja baja & Franja baja-media & Franja media &
+      Franja alta & Franja baja \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+La fila de rendimiento refleja la posición relativa reportada en la Ronda 22 de los
+\textit{TechEmpower Framework Benchmarks}, publicada el 15 de noviembre de 2023
+\parencite{techempower2023}: ASP.NET Core encabeza el grupo de frameworks de propósito general,
+mientras que Express, Rails, Laravel y Django quedan agrupados muy cerca entre sí en la parte
+baja de la tabla, y Spring se sitúa en una franja intermedia. Se consigna la franja y no una cifra
+puntual de \textit{composite score} porque esos valores dependen del tipo de prueba (JSON,
+consultas únicas, múltiples, \textit{Fortunes}, actualizaciones y texto plano) y del hardware del
+entorno Citrine; citar un único número descontextualizado daría una precisión aparente que la
+fuente no respalda. Corresponde además una advertencia metodológica: estos benchmarks miden
+\textit{frameworks} bajo carga sintética, no aplicaciones reales, donde el cuello de botella
+suele estar en el diseño de las consultas y no en el framework.
+
+\subsection{Justificación del framework del PFC}
+
+La elección quedó registrada en el ADR-001 del proyecto, escrito en PE-U3, y conviene ser exacto
+sobre cómo se tomó: el espacio de decisión estaba \textbf{acotado por el docente} a PHP 8.2,
+ASP.NET Core 8 y Java, de modo que Symfony y Django nunca fueron opciones reales aunque
+aparezcan en la tabla comparativa. Dentro de ese margen se eligió \textbf{Java 21 con Spring
+Boot 3.2.5} por cuatro razones consignadas en el ADR: Spring Data JPA resuelve el acceso a
+PostgreSQL ---motor ya fijado como restricción---, Spring Security aporta autenticación JWT con
+roles de forma integrada, Angular consume un backend Java por HTTP/JSON sin capas intermedias, y
+el tipado estático de Java reduce errores en tiempo de ejecución en un equipo de tres personas
+que trabaja en paralelo sobre el mismo código.
+
+El propio ADR documenta el costo de esa decisión, que es la parte que suele omitirse: una curva
+de aprendizaje estimada en dos semanas sobre diez de desarrollo efectivo, y un hospedaje más caro
+que el de PHP compartido. Contrastado con la tabla anterior, el resultado es coherente: si el
+criterio hubiera sido exclusivamente el rendimiento, ASP.NET Core habría sido la opción
+indicada; si hubiera sido la velocidad de arranque del equipo, Laravel. Se privilegió en cambio
+la integración con PostgreSQL y la robustez del modelo de seguridad, que para un sistema que
+maneja datos de menores de edad pesa más que unos milisegundos por petición.
+
+% ============================================================
 %  3. APLICACIÓN MVC COMPLETA  [Beltrán]  — Directriz 2
 % ============================================================
 \section{Aplicación MVC Completa --- SGED}
@@ -515,8 +670,153 @@ verificado en verde localmente (\texttt{mvnw test -Dtest=CategoriaSortValidation
 % ============================================================
 %  4. API REST + SWAGGER UI  [Pallo]  — Directriz 3
 % ============================================================
-\section{API REST Documentada --- Swagger UI}
+\section{Diseño de la API REST: Principios de Fielding, JWT y OpenAPI}
 \label{sec:api}
+
+\subsection{Los seis principios de Fielding en el diseño de la API}
+
+\textcite{fielding2000} no define REST como un formato sino como un conjunto de seis
+restricciones arquitectónicas. La API del SGED las adopta de forma desigual, y esa desigualdad
+está analizada una por una ---con el costo concreto de cada incumplimiento--- en el
+Anexo~\ref{apx:anexoC}. En síntesis: \textit{cliente--servidor} y \textit{sistema por capas} se
+cumplen por completo; \textit{sin estado}, \textit{interfaz uniforme} y \textit{cacheable} de
+forma parcial; y \textit{código bajo demanda} no aplica por ser opcional.
+
+La restricción \textit{cacheable} merece una nota, porque su cumplimiento parcial es
+consecuencia de una corrección hecha durante esta práctica. Spring Security emite por omisión
+\texttt{Cache-Control: no-store} en todo endpoint autenticado, lo que impedía por completo que
+cualquier caché interviniera. Se habilitó validación por \texttt{ETag} en los catálogos de solo
+lectura ---categorías y estados generales---, que ahora responden
+\texttt{Cache-Control: private, no-cache} y devuelven 304 cuando el cliente ya tiene la versión
+vigente. El resto de los recursos conserva \texttt{no-store}, y eso es deliberado: son datos
+volátiles y ligados al rol de quien pregunta, donde cachear sería incorrecto y no una mejora.
+
+Los dos apartados siguientes desarrollan las otras dos restricciones sobre las que el equipo
+tomó decisiones explícitas de diseño: la interfaz uniforme, a través de las URIs, y la ausencia
+de estado, a través del JWT.
+
+\subsection{Diseño de URIs: reglas aplicadas y anti-patrones detectados}
+
+La regla central es que una URI identifica un \textbf{recurso} ---un sustantivo--- y que la
+operación la expresa el verbo HTTP, no la ruta \parencite{masse2011}. La API sigue esa regla en
+su núcleo: \texttt{GET /api/estudiantes} lista, \texttt{POST /api/estudiantes} crea,
+\texttt{PUT /api/estudiantes/\{id\}} actualiza y \texttt{DELETE /api/estudiantes/\{id\}} da de
+baja. La jerarquía se expresa por anidamiento cuando el recurso hijo solo existe en el contexto
+del padre, como en \texttt{GET /api/lesiones/estudiante/\{idEstudiante\}} o
+\texttt{POST /api/representantes/\{id\}/estudiantes/\{idEstudiante\}}.
+
+Ahora bien, una revisión honesta del mapa completo de rutas ---dieciséis controladores---
+revela cuatro desviaciones que conviene declarar antes de que las señale el evaluador.
+
+\begin{table}[h!]
+  \centering
+  \caption{Anti-patrones detectados en las URIs del SGED}
+  \label{tab:uris}
+  \begin{tabularx}{\linewidth}{@{}L{3.1cm}L{5.4cm}L{5.6cm}@{}}
+    \toprule
+    \textbf{Anti-patrón} & \textbf{Casos en la API} & \textbf{Costo real} \\
+    \midrule
+    Verbo en la ruta &
+      \texttt{/api/estudiantes/operaciones/desactivar-categoria},
+      \texttt{/api/consentimientos/\{id\}/revocar},
+      \texttt{/api/lesiones/\{id\}/alta},
+      \texttt{/api/asistencias/qr/marcar} &
+      Son transiciones de estado, no recursos. Un diseño estricto las modelaría como
+      \texttt{PATCH} sobre el recurso o como un sub-recurso de estado. El costo es de
+      previsibilidad: el cliente no puede deducir la ruta, tiene que consultarla. \\[3pt]
+    Singular frente a plural &
+      \texttt{/api/representante} (portal del representante autenticado) convive con
+      \texttt{/api/representantes} (CRUD administrativo) &
+      La distinción es real ---uno es autoservicio, el otro gestión--- pero la diferencia de una
+      sola letra la vuelve indistinguible de una errata. Un nombre como
+      \texttt{/api/representantes/me} habría expresado lo mismo sin ambigüedad. \\[3pt]
+    Convención mixta &
+      \texttt{/api/estados\_generales} usa \textit{snake\_case}; el resto de la API usa una sola
+      palabra en minúsculas &
+      Rompe la uniformidad y obliga a recordar la excepción. \\[3pt]
+    Ausencia de versionado &
+      Ninguna ruta lleva \texttt{/v1/}, ni se negocia versión por cabecera o parámetro &
+      Hoy el costo es bajo porque el frontend se despliega junto al backend. Deja de serlo en
+      cuanto exista un consumidor externo: un cambio incompatible rompería sin aviso a la
+      colección Postman versionada y a cualquier integración. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+De las tres estrategias de versionado que suelen compararse ---por ruta (\texttt{/api/v1/}), por
+cabecera (\texttt{Accept-Version}) y por parámetro de consulta---, la primera sería la adecuada
+aquí: es la más visible en registros y en la propia colección Postman, y no exige que el cliente
+recuerde enviar nada adicional. Se registra como trabajo pendiente y no como decisión tomada.
+
+\subsection{JWT: estructura, flujo y revocación}
+
+Un JSON Web Token tiene tres partes separadas por puntos y codificadas en Base64URL. La
+\textbf{cabecera} declara el algoritmo de firma; el \textbf{payload} transporta las
+afirmaciones (\textit{claims}); la \textbf{firma} es el HMAC de las dos anteriores con la clave
+del servidor, y es lo que impide alterar el contenido. El SGED firma con \textbf{HS256}
+(HMAC-SHA-256), que es lo que la librería selecciona a partir de una clave simétrica de al menos
+256 bits.
+
+\begin{lstlisting}[style=json, caption={Payload real emitido por JwtService (valores de ejemplo)}]
+{
+  "sub":  "admin",              // usuario autenticado
+  "rol":  "ADMINISTRADOR",      // claim propio: autoridad para @PreAuthorize
+  "type": "access",             // access | refresh: impide usar uno por el otro
+  "iss":  "sged-backend",       // emisor, validado con requireIssuer
+  "aud":  "sged-frontend",      // audiencia, validada en isTokenValid
+  "jti":  "8f3c1e0a-...",       // identificador unico: la clave de la revocacion
+  "iat":  1786512000,
+  "exp":  1786515600            // 1 h para el access; 7 dias para el refresh
+}
+\end{lstlisting}
+
+El flujo completo se aparta del esquema de manual en un punto deliberado. El manual dice: el
+cliente guarda el token y lo envía en la cabecera \texttt{Authorization: Bearer}. El SGED
+\textbf{no hace eso}. Tras validar credenciales, el servidor emite el token dentro de una cookie
+\texttt{sged\_access} marcada \texttt{HttpOnly + Secure + SameSite=Strict}; el navegador la
+reenvía sola en cada petición y \texttt{JwtAuthenticationFilter} la lee del lado del servidor,
+verifica firma, emisor, audiencia y expiración, y puebla el contexto de seguridad. El frontend
+Angular nunca ve el token ni lo adjunta a mano. El motivo, registrado en los ADR-002 y ADR-007,
+es que un token legible por JavaScript convierte cualquier XSS en una toma de sesión inmediata.
+
+Queda entonces el problema que todo esquema \textit{stateless} arrastra: \textbf{un JWT firmado es
+válido hasta que expira}, y el servidor no tiene dónde ``borrarlo''. Las dos estrategias
+habituales son acortar mucho la vida del token y aceptar la ventana de riesgo, o mantener una
+lista de revocación. El SGED implementa la segunda con la clase
+\texttt{RedisBlacklistService}: al cerrar sesión, el \texttt{jti} del token se almacena en Redis
+con un TTL igual al tiempo que le restaba de vida, y el filtro rechaza cualquier token cuyo
+\texttt{jti} figure ahí. La entrada se autoelimina justo cuando el token habría caducado por sí
+solo, de modo que la lista nunca crece indefinidamente.
+
+Conviene ser explícito sobre lo que esto cuesta, porque es la contradicción que el Anexo~C
+señala: consultar una lista de revocación es, por definición, consultar estado del servidor, así
+que la API no es estrictamente \textit{stateless}. Se aceptó a cambio de que cerrar sesión
+signifique algo. La alternativa ---no revocar--- habría preservado la pureza del principio y
+dejado sesiones robadas vivas hasta una hora.
+
+\subsection{OpenAPI 3 como contrato: Swagger UI y Redoc}
+
+La especificación OpenAPI cumple entre frontend y backend la misma función que el WSDL cumple en
+SOAP: describir el contrato en un formato legible por máquinas, de modo que un consumidor pueda
+generar un cliente sin leer el código del servidor. En el SGED no se escribe a mano: springdoc la
+deriva de las anotaciones de Spring MVC, de las firmas de los métodos y de los \textit{records}
+de DTO, y la publica en \texttt{/api/docs.json}. Que el contrato se genere del código y no de un
+documento paralelo evita la divergencia habitual entre lo que la API promete y lo que hace.
+
+Cada operación queda descrita por su \texttt{operationId}, sus \texttt{parameters} ---con
+nombre, ubicación y tipo---, su \texttt{requestBody} y el conjunto de \texttt{responses} con el
+esquema de cada código de estado. Para el endpoint de clima incorporado en la
+Sección~\ref{sec:api-externa}, por ejemplo, la especificación generada expone la ruta
+\texttt{/api/clima/entrenamiento} con sus tres parámetros opcionales (\texttt{fecha},
+\texttt{desde} y \texttt{hasta}) sin que se haya escrito una sola anotación de documentación.
+
+Sobre esa misma especificación pueden montarse dos interfaces de propósito distinto.
+\textbf{Swagger UI} es interactiva: permite ejecutar peticiones desde el navegador, lo que la
+hace la herramienta adecuada para desarrollo y para una demostración en vivo como la de esta
+práctica, y es la que el SGED sirve en \texttt{/api/docs}. \textbf{Redoc} genera documentación
+estática de tres columnas, más legible y mejor indexable, pero sin capacidad de ejecución: es la
+opción razonable para publicar documentación a consumidores externos, precisamente porque no
+ofrece un botón que dispare llamadas reales contra el servidor.
 
 \subsection{Configuración de Swagger UI}
 
@@ -564,19 +864,23 @@ siguientes si el manejo de cookies está activo en Postman/Insomnia.
 Retorna la lista de categorías activas; requiere rol \texttt{ADMINISTRADOR},
 \texttt{ENTRENADOR} o \texttt{RECEPCIONISTA}.
 
-\begin{lstlisting}[style=json, caption={Response --- GET /api/categorias/activas (estructura CategoriaResponse.java)}]
+\begin{lstlisting}[style=json, caption={Response --- GET /api/categorias/activas (captura real, base de datos del SGED)}]
 [
-  {
-    "idCategoria": 1,
-    "nombre": "Sub-12",
-    "edadMin": 10,
-    "edadMax": 12,
-    "descripcion": "Categoria formativa sub-12",
-    "activo": true,
-    "createdAt": "2026-03-01T10:00:00Z"
-  }
+  {"idCategoria":1,"nombre":"SUB-12","edadMin":10,"edadMax":12,
+   "descripcion":"Categoria sub-12","activo":true,
+   "createdAt":"2026-08-03T04:44:33.481682Z"},
+  {"idCategoria":2,"nombre":"SUB-14","edadMin":12,"edadMax":14,
+   "descripcion":"Categoria sub-14","activo":true,
+   "createdAt":"2026-08-03T04:44:33.481682Z"},
+  {"idCategoria":3,"nombre":"SUB-16","edadMin":14,"edadMax":16,
+   "descripcion":"Categoria sub-16","activo":true,
+   "createdAt":"2026-08-03T04:44:33.481682Z"}
 ]
 \end{lstlisting}
+
+Esta salida no es un ejemplo ilustrativo: es la respuesta real capturada contra la base de
+datos del SGED, con las tres categorías sembradas el 3 de agosto de 2026. La ejecución en
+Postman está documentada en \texttt{docs/postman/evidencias/}.
 
 \subsubsection{Endpoint 3 --- POST /api/asistencias/qr/sesion/\{idSesion\}/token}
 
@@ -700,17 +1004,17 @@ Host: localhost:8080
 Cookie: access_token=<obtenida en POST /api/auth/login>
 \end{lstlisting}
 
-\begin{lstlisting}[style=json, caption={Response REST --- array JSON directo (sin envoltorio)}]
+\begin{lstlisting}[style=json, caption={Response REST --- array JSON directo (sin envoltorio), captura real}]
 [
-  {
-    "idCategoria": 1,
-    "nombre": "Sub-12",
-    "edadMin": 10,
-    "edadMax": 12,
-    "descripcion": "Categoria formativa sub-12",
-    "activo": true,
-    "createdAt": "2026-03-01T10:00:00Z"
-  }
+  {"idCategoria":1,"nombre":"SUB-12","edadMin":10,"edadMax":12,
+   "descripcion":"Categoria sub-12","activo":true,
+   "createdAt":"2026-08-03T04:44:33.481682Z"},
+  {"idCategoria":2,"nombre":"SUB-14","edadMin":12,"edadMax":14,
+   "descripcion":"Categoria sub-14","activo":true,
+   "createdAt":"2026-08-03T04:44:33.481682Z"},
+  {"idCategoria":3,"nombre":"SUB-16","edadMin":14,"edadMax":16,
+   "descripcion":"Categoria sub-16","activo":true,
+   "createdAt":"2026-08-03T04:44:33.481682Z"}
 ]
 \end{lstlisting}
 
@@ -722,9 +1026,158 @@ REST entrega el arreglo JSON directamente.
 Este es el argumento empírico del criterio \textit{overhead}: no una afirmación teórica,
 sino una diferencia observable en los bytes transferidos.
 
-\textit{Pendiente (Pallo):} reemplazar la respuesta de ejemplo de
-\texttt{/api/categorias/activas} por la captura real de Postman con datos de la base de
-datos del SGED antes de la entrega final.
+Ambos lados de la comparación son ejecuciones reales y no reconstrucciones: la llamada SOAP se
+realizó con \texttt{curl} contra el servicio público \texttt{NumberConversion} y la respuesta
+está transcrita literalmente; la llamada REST se ejecutó contra la base de datos del SGED
+levantada en local, con evidencia en \texttt{docs/postman/evidencias/}.
+
+\subsection{Sobre el formato de respuesta de la API}
+\label{sec:envoltorio}
+
+Cabe justificar una decisión que se aparta de la envoltura
+\texttt{\{success, data, message, errors, meta\}} sugerida en los objetivos de la práctica. El
+SGED devuelve el recurso directamente y delega la señalización de éxito o error al protocolo:
+código 200 con el cuerpo del recurso, 201 con la entidad creada, 204 sin cuerpo, y para los
+errores un documento \textit{Problem Details} conforme al RFC 7807 \parencite{rfc7807}, que es lo
+que produce su \texttt{GlobalExceptionHandler}.
+
+El argumento no es de comodidad sino de coherencia con el principio de interfaz uniforme de
+\textcite{fielding2000}: una envoltura propia duplica en el cuerpo información que HTTP ya
+transporta en la línea de estado, y obliga a todo cliente a leer dos veces el mismo hecho ---una
+en el código HTTP y otra en el campo \texttt{success}--- con el riesgo de que ambos se
+contradigan. El RFC 7807, además, es un estándar con registro IANA, mientras que la envoltura es
+una convención de casa. Se reconoce el costo de la decisión: los clientes que esperan una forma
+uniforme para toda respuesta deben inspeccionar el código de estado, y la paginación viaja en un
+objeto \texttt{Page} de Spring Data en vez de un campo \texttt{meta} homogéneo.
+
+% ============================================================
+%  6-bis. CONSUMO DE SERVICIOS WEB EXTERNOS  [Pallo]
+%     Corresponde al Paso 3 y al apartado 5.3 de la guía PE-U4
+% ============================================================
+\section{Consumo de Servicios Web Externos}
+\label{sec:api-externa}
+
+\subsection{La API externa elegida y por qué}
+
+El SGED consume \textbf{Open-Meteo} \parencite{openmeteo2026}, un servicio REST público de
+pronóstico meteorológico. La elección atendió a dos criterios explícitos.
+
+El primero es de pertinencia con el dominio. La escuela entrena en cancha abierta y la lluvia es
+la causa real por la que una sesión se reprograma; el dato consumido alimenta una decisión
+operativa concreta del entrenador, no un requisito de forma. El segundo es de reproducibilidad:
+Open-Meteo no exige clave de API, de modo que el sistema levanta completo desde una clonación
+limpia. Este criterio pesó por experiencia propia del proyecto: el módulo de generación de texto
+con IA sí requiere credencial y por eso viene deshabilitado por omisión, lo que lo vuelve
+imposible de demostrar ante un evaluador que no tiene esa clave.
+
+\subsection{Cliente HTTP del lado del servidor}
+
+Spring Boot ofrece tres clientes: \texttt{RestTemplate}, en mantenimiento desde Spring 5;
+\texttt{WebClient}, reactivo y no bloqueante, pensado para WebFlux; y \texttt{RestClient},
+introducido en Spring Framework 6.1, con API fluida y semántica síncrona. El SGED usa
+\texttt{RestClient}, coherente con su modelo de hilos bloqueante sobre Spring MVC. La
+configuración fija un tiempo de espera simétrico de cinco segundos en conexión y lectura, por una
+razón de producto antes que técnica: el clima es información de apoyo, y es preferible pintar la
+pantalla de sesiones sin el pronóstico que dejar al entrenador esperando frente a un proveedor
+lento.
+
+\subsection{Caché de respuestas externas: patrón cache aside}
+
+Cachear la respuesta externa persigue los tres objetivos que señala la literatura de
+resiliencia \parencite{nygard2018}: no agotar la cuota del proveedor, reducir la latencia
+percibida y aislar al sistema de la indisponibilidad del tercero. El SGED implementa
+\textit{cache aside} sobre Redis con un TTL de \textbf{10 minutos}, valor acorde al dominio ---el
+pronóstico horario no se recalcula más rápido que eso--- y coincidente con el sugerido en la guía
+para datos meteorológicos.
+
+La implementación es explícita y no declarativa con \texttt{@Cacheable}, a diferencia del resto
+del proyecto, por dos motivos que la anotación no permite resolver. El primero es que
+\textbf{un fallo del proveedor no debe cachearse}: con la anotación, la respuesta de degradación
+quedaría almacenada y el sistema seguiría informando ``no disponible'' durante los diez minutos
+del TTL aunque el proveedor se recuperara al instante siguiente. El segundo es que la respuesta
+declara su procedencia (\texttt{api-externa} o \texttt{cache}), dato que solo puede resolverse
+donde se sabe si hubo acierto de caché, y que además hace el mecanismo demostrable en vivo.
+
+\begin{lstlisting}[style=java, caption={Cache aside en ClimaService --- los tres pasos del patrón}]
+// 1. Consultar el cache.
+Optional<PronosticoEntrenamiento> enCache = leerDeCache(clave);
+if (enCache.isPresent()) {
+    return ClimaEntrenamientoResponse.desdeCache(enCache.get());
+}
+// 2. Fallo de cache: ir a la API externa.
+try {
+    JsonNode crudo = client.pronosticoHorario(latitud, longitud, zonaHoraria, fecha);
+    PronosticoEntrenamiento pronostico = interpretar(crudo, fecha, desde, hasta);
+    // 3. Guardar solo el exito.
+    guardarEnCache(clave, pronostico);
+    return ClimaEntrenamientoResponse.desdeApiExterna(pronostico);
+} catch (RestClientException e) {
+    return ClimaEntrenamientoResponse.noDisponible(
+            "El servicio de clima no responde en este momento");
+}
+\end{lstlisting}
+
+\subsection{Manejo de errores y degradación}
+
+El endpoint responde \textbf{200 con \texttt{disponible=false}} y un motivo legible cuando el
+proveedor falla, en lugar de propagar un 5xx: la caída de un tercero no es un error del SGED, y
+la pantalla de sesiones debe seguir siendo utilizable sin el pronóstico. Los tiempos de espera
+agotados, los errores 4xx y los 5xx se capturan por igual como \texttt{RestClientException}, y un
+cuerpo con forma inesperada ---200 con datos incompletos--- recibe el mismo trato.
+
+Redis recibe una consideración análoga: es caché, no fuente de verdad. Sus fallos se registran y
+el flujo continúa hacia la API externa, de modo que un Redis caído cuesta velocidad y no
+funcionalidad. Esto responde de forma directa a una de las preguntas previstas para la defensa
+oral.
+
+\subsection{Verificación y métricas}
+
+\begin{table}[h!]
+  \centering
+  \caption{Rendimiento con y sin caché --- \texttt{GET /api/clima/entrenamiento}}
+  \label{tab:cache-metricas}
+  \begin{tabularx}{\linewidth}{@{}L{4.6cm}L{3.2cm}L{2.8cm}L{3.2cm}@{}}
+    \toprule
+    \textbf{Escenario} & \textbf{Origen} & \textbf{Tiempo} & \textbf{Salida a Internet} \\
+    \midrule
+    Primera llamada (caché vacío) & \texttt{api-externa} & 1310 ms & Sí \\
+    Segunda llamada (dentro del TTL) & \texttt{cache} & 32 ms & No \\
+    \midrule
+    \textbf{Efecto del caché} & & \textbf{$\approx$41$\times$} & \textbf{1 llamada evitada} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+La clave almacenada se verificó directamente en el contenedor de Redis:
+
+\begin{lstlisting}[style=bash, caption={Verificación del caché en Redis}]
+$ docker exec sged_redis redis-cli KEYS "clima:*"
+clima:entrenamiento:2026-08-11:15:00-19:00
+
+$ docker exec sged_redis redis-cli TTL clima:entrenamiento:2026-08-11:15:00-19:00
+598
+\end{lstlisting}
+
+La clave incorpora la franja horaria y no solo el día, porque dos sesiones del mismo día en
+horarios distintos tienen pronósticos distintos y no deben compartir entrada. Se forzó además un
+fallo real del proveedor solicitando una fecha fuera de su rango de cobertura: la respuesta
+degradó correctamente y, comprobado con \texttt{redis-cli}, \textbf{no dejó ninguna clave
+cacheada}, que es precisamente el comportamiento que motivó descartar \texttt{@Cacheable}.
+
+El comportamiento está cubierto por seis pruebas automatizadas que no salen a Internet ---el
+cliente está simulado---, y que verifican las decisiones propias y no el funcionamiento del
+proveedor: acierto y fallo de caché, no cacheo de fallos, Redis caído, respuesta incompleta y
+separación de claves por franja. La suite completa del backend tras el cambio reporta
+\texttt{Tests run: 211, Failures: 0, Errors: 0}.
+
+\subsection{Presentación en la interfaz}
+
+El pronóstico se muestra en una tarjeta ``Clima en la cancha'' encabezando la pantalla
+\textit{Mis sesiones} del entrenador, con la temperatura máxima, la probabilidad de lluvia y la
+precipitación acumulada de la franja, además de una recomendación operativa. Una insignia indica
+si el dato provino de la API externa o del caché, lo que permite demostrar el mecanismo sin
+abrir una terminal. Cuando la sesión de hoy existe, el frontend envía su franja horaria real; si
+no, el backend resuelve con el horario vespertino configurado por omisión.
 
 % ============================================================
 %  6. TENDENCIAS EMERGENTES  [Beltrán]  — Directriz 5
@@ -869,6 +1322,192 @@ En el contexto educativo ecuatoriano, esto implica que la formación en fundamen
 no para competir con la IA, sino para usarla con rigor y responsabilidad.
 
 % ============================================================
+%  6-ter. SEGURIDAD, RENDIMIENTO Y DESPLIEGUE  [Pallo]
+%     Corresponde al Paso 4 y al apartado 5.4 de la guía PE-U4
+% ============================================================
+\section{Seguridad, Pruebas de Rendimiento y Despliegue}
+\label{sec:seguridad-rendimiento}
+
+\subsection{Auditoría de seguridad OWASP}
+
+La auditoría no se redactó a mano: el repositorio incluye \texttt{scripts/audit-owasp.sh}, que
+levanta el sistema, ejecuta cada control contra la instancia real y deposita la salida cruda en
+\texttt{docs/mediciones/sec/}. La tabla \ref{tab:owasp} resume los controles frente al OWASP Top
+10 de 2021 \parencite{owasp2021}, y su columna de evidencia remite a esos archivos.
+
+\begin{table}[h!]
+  \centering
+  \caption{Controles OWASP en el SGED: vector, contramedida y evidencia}
+  \label{tab:owasp}
+  \begin{tabularx}{\linewidth}{@{}L{2.3cm}L{3.6cm}L{4.4cm}L{3.1cm}@{}}
+    \toprule
+    \textbf{Riesgo} & \textbf{Vector en el SGED} & \textbf{Contramedida implementada} &
+    \textbf{Evidencia} \\
+    \midrule
+    A01 Control de acceso roto &
+      Un \texttt{ENTRENADOR} invoca un recurso de \texttt{ADMINISTRADOR} &
+      \texttt{@PreAuthorize} por método sobre los seis roles; matriz completa verificada &
+      \texttt{a01-acceso-roto.txt}, \texttt{a01-roles-nuevos.txt} \\[3pt]
+    A02 Fallos criptográficos &
+      Sesión o credenciales viajando en claro &
+      TLS terminado en nginx; JWT en cookie \textit{HttpOnly}; HSTS \texttt{max-age=31536000} &
+      \texttt{a02-tls.txt} \\[3pt]
+    A03 Inyección &
+      \texttt{' OR '1'='1} en campos de alta de estudiante &
+      Consultas parametrizadas vía JPA y procedimientos almacenados; validación con
+      \textit{Bean Validation} $\rightarrow$ 422 &
+      \texttt{a03-inyeccion.txt} \\[3pt]
+    A04 Diseño inseguro &
+      Alta de usuario \texttt{ENTRENADOR} sin registro en \texttt{deportivo.entrenadores}:
+      estado de negocio inválido alcanzable &
+      \textbf{No mitigado.} Detectado en revisión entre pares (REV-05) &
+      \texttt{REVISION-BELTRAN.md} \\[3pt]
+    A05 Configuración insegura &
+      Cabeceras ausentes, \textit{clickjacking}, \textit{MIME sniffing} &
+      CSP \texttt{default-src 'self'; frame-ancestors 'none'},
+      \texttt{X-Frame-Options: DENY}, \texttt{X-Content-Type-Options: nosniff} &
+      \texttt{a05-cabeceras.txt} \\[3pt]
+    A06 Componentes vulnerables &
+      \texttt{spring-boot-starter-parent} fijado en 3.2.5 &
+      \textbf{Parcial.} CVE-2025-22235 aplica a la versión, pero no es explotable aquí porque
+      \texttt{SecurityConfig} protege \texttt{/actuator/*} con rutas literales y no con
+      \texttt{EndpointRequest.to()} &
+      \texttt{REVISION-BELTRAN.md} (REV-08) \\[3pt]
+    A07 Fallos de autenticación &
+      Fuerza bruta sobre \texttt{POST /api/auth/login} &
+      Bloqueo por IP tras 5 intentos en ventana de 15 min $\rightarrow$ 429 con
+      \textit{Problem Details} &
+      \texttt{a07-rate-limit.txt} \\[3pt]
+    A09 Fallos de registro &
+      Ataque de credenciales sin rastro auditable &
+      \textit{Logger} \texttt{AUTH\_AUDIT} con IP, marca temporal y sujeto en cada
+      \texttt{AUTH\_LOGIN\_OK} / \texttt{AUTH\_LOGIN\_FAIL} &
+      \texttt{a09-logging.txt} \\[3pt]
+    XSS &
+      Inyección de \textit{script} vía campos de texto mostrados en la interfaz &
+      Escapado automático de Angular por omisión más CSP restrictiva; el
+      \texttt{X-XSS-Protection: 0} es deliberado, pues el auditor heredado está obsoleto y
+      llegó a introducir vulnerabilidades &
+      \texttt{a05-cabeceras.txt} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Dos filas de esa tabla merecen destacarse porque son las que un informe complaciente habría
+omitido. \textbf{A04 no está mitigado}: el sistema permite crear una cuenta con rol
+\texttt{ENTRENADOR} que no puede usar el módulo de sesiones, porque falta el registro vinculado
+por relación \texttt{@OneToOne} obligatoria y ningún flujo de interfaz lo crea. Es un defecto de
+diseño, no un error de codificación, y por eso encaja en A04 y no en otra categoría.
+\textbf{A06 está parcialmente cubierto}: la versión declarada del framework figura en un CVE
+publicado, y el matiz de que la configuración concreta del proyecto no resulta explotable no
+equivale a estar al día. La acción correcta sigue siendo actualizar la dependencia.
+
+\subsection{Prueba de carga con Apache Bench}
+
+La metodología fija tres parámetros: un endpoint representativo, el número total de solicitudes
+(\texttt{-n}) y el nivel de concurrencia (\texttt{-c}). Se eligió
+\texttt{GET /api/categorias/activas} por ser una lectura autenticada que atraviesa la pila
+completa ---filtro JWT, autorización por método, servicio, caché y base de datos--- sin efectos
+secundarios que contaminen corridas sucesivas.
+
+\begin{lstlisting}[style=bash, caption={Comando ejecutado}]
+ab -n 500 -c 50 -H "Authorization: Bearer $token" \
+   http://localhost:8080/api/categorias/activas
+\end{lstlisting}
+
+\begin{table}[h!]
+  \centering
+  \caption{Resultados de Apache Bench (500 solicitudes, concurrencia 50)}
+  \label{tab:ab}
+  \begin{tabularx}{\linewidth}{@{}L{5.2cm}L{3.4cm}@{}}
+    \toprule
+    \textbf{Métrica} & \textbf{Valor} \\
+    \midrule
+    Solicitudes completadas & 500 \\
+    Solicitudes fallidas & 0 \\
+    Rendimiento (\textit{throughput}) & 211,33 req/s \\
+    Tiempo total de la prueba & 2,366 s \\
+    P50 (mediana) & 184 ms \\
+    P95 & 597 ms \\
+    P99 & 701 ms \\
+    Máximo & 799 ms \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+La lectura honesta de estas cifras es que la tasa de error nula es el dato sólido y la latencia
+el dato mejorable: con 50 usuarios concurrentes la mediana se mantiene en 184 ms, pero la cola
+alta se dispara hasta 799 ms, lo que revela contención bajo carga y no un problema de capacidad
+bruta. Interesa señalar además un detalle metodológico documentado por quien ejecutó la prueba:
+una primera corrida se descartó porque el token JWT había expirado y las 500 solicitudes
+recibieron 401, escenario en el que \texttt{ab} igualmente informa un \textit{throughput}
+excelente por responder errores muy rápido. Una prueba de carga sin verificar previamente que se
+está midiendo el recurso real puede producir números buenos y carentes de sentido.
+
+\subsection{Containerización con Docker Compose}
+
+El despliegue se orquesta con Docker Compose, que aporta tres beneficios concretos al proyecto:
+entornos reproducibles ---el evaluador levanta exactamente la misma pila que el equipo---,
+aislamiento de dependencias ---PostgreSQL 16 y Redis 7 conviven sin instalarse en el anfitrión---
+y una ruta directa a integración continua, donde el mismo archivo describe el entorno de
+pruebas.
+
+La composición define cuatro servicios encadenados por dependencias con condición de salud:
+\texttt{postgres} y \texttt{redis} deben reportarse \texttt{healthy} antes de que arranque
+\texttt{backend}, y \texttt{frontend} depende de este último. Ese encadenamiento no es cosmético:
+sin él, el backend arrancaría antes que la base y fallaría la validación del esquema. Las
+imágenes se fijan por digest \texttt{sha256} en lugar de por etiqueta, de modo que
+\texttt{postgres:16} no pueda cambiar de contenido bajo el mismo nombre entre dos despliegues.
+
+Ninguna credencial vive en el código fuente: todas se inyectan por variables de entorno desde un
+archivo \texttt{.env} excluido del control de versiones, del que se versiona únicamente la
+plantilla \texttt{.env.example}. La razón es que el repositorio es un artefacto que se comparte,
+se clona y se publica, y un secreto que entra en su historial permanece en él aunque se borre en
+un cambio posterior. Es también la razón por la que la clave del servicio de IA quedó fuera y el
+módulo se deshabilita por omisión, y un argumento adicional a favor de haber elegido una API
+externa que no exige credencial \parencite{swebok2024}.
+
+\subsection{Reflexión sobre el proceso de aprendizaje}
+
+Cada integrante consigna a continuación las lecciones técnicas que considera más relevantes del
+desarrollo del PFC, los errores que resultaron más costosos y qué haría de forma distinta en un
+proyecto futuro.
+
+\subsubsection*{Pallo Pinto Alejandro Daniel}
+
+Mi rol en el proyecto fue seguridad y validación: el diseño de autenticación con JWT en cookie
+\texttt{HttpOnly}, la auditoría OWASP y la batería de pruebas. Precisamente por eso, el error que
+más me marcó ocurrió en mi propio terreno.
+
+El 20 de julio moví el JWT a una cookie \texttt{HttpOnly+Secure+SameSite=Strict} y saqué los
+tokens del cuerpo de la respuesta del login (\texttt{bcb3642}). Cuatro días después, un
+\textit{merge} del día de cierre (\texttt{ad2fec0}) reescribió el DTO y volvió a agregar los
+campos \texttt{accessToken} y \texttt{refreshToken}, borrando incluso el comentario que
+documentaba por qué no debían estar. Mi propia corrección quedó revertida sin que nadie lo
+advirtiera, y esa fue la versión que el docente evaluó; la rehice el 4 de agosto
+(\texttt{62183d8}).
+
+Lo grave no es el \textit{merge}, eso pasa en cualquier equipo: es que yo era el responsable de
+las pruebas y ninguna cubría la condición de la que dependía mi propio diseño de seguridad. La
+suite ya superaba el umbral de cobertura que nos habíamos fijado, y aun así nadie preguntaba lo
+más básico: ¿la respuesta del login trae un token?
+
+Hoy lo haría distinto en un punto concreto: toda decisión de seguridad registrada en un ADR
+debería nacer junto a una prueba que falle si alguien la revierte. Un \textit{fix} sin prueba no
+es un \textit{fix}, es una intención que sobrevive hasta el siguiente \textit{merge}. La cobertura
+alta me dio una confianza que no estaba justificada, porque mide cuánto código se ejecuta, no si
+lo que importa está protegido. La trazabilidad de este episodio queda en \texttt{OBSERVACIONES.md}
+bajo el código OBS-13, con los tres \textit{commits} implicados.
+
+\subsubsection*{Beltrán}
+
+\textit{Pendiente de redacción por el integrante (mínimo 100 palabras).}
+
+\subsubsection*{Cruz}
+
+\textit{Pendiente de redacción por el integrante (mínimo 100 palabras).}
+
+% ============================================================
 %  7. CONCLUSIONES  [Beltrán]
 % ============================================================
 \section{Conclusiones}
@@ -889,7 +1528,7 @@ no para competir con la IA, sino para usarla con rigor y responsabilidad.
     paradigmas.
 
   \item \textbf{MVC como arquitectura estructurante.}
-    El patrón MVC, implementado con Spring Boot y React, demostró ser suficientemente
+    El patrón MVC, implementado con Spring Boot y Angular, demostró ser suficientemente
     flexible para soportar los módulos de asistencia QR, gestión de categorías y control
     de usuarios del SGED, manteniendo una separación clara de responsabilidades.
 
@@ -944,6 +1583,249 @@ no para competir con la IA, sino para usarla con rigor y responsabilidad.
 %  (crear referencias.bib en la misma carpeta que este .tex)
 % ============================================================
 \appendix
+
+% ============================================================
+%  ANEXO A — ESTRUCTURA DEL REPOSITORIO  [Pallo]
+% ============================================================
+\section{Anexo A --- Estructura del repositorio (rama \texttt{main})}
+\label{apx:anexoA}
+
+Repositorio de entrega: \url{https://github.com/Alejandro-hub19/AppWeb-PracExpe2-Pallo-Beltran-Cruz}
+--- 515 archivos versionados en la rama \texttt{main}.
+
+\begin{lstlisting}[style=bash, caption={Estructura de primer y segundo nivel}]
+.
+|-- README.md                  Portada del repo + NOTA DE AUTORIA (leer primero)
+|-- LEEME_PRIMERO.md           Origen del codigo y fecha de sincronizacion
+|-- CONTRIBUTORS.md            Autoria real del PFC con roles CRediT
+|-- docker-compose.yml         4 servicios, healthchecks, imagenes por digest
+|-- .env.example               Plantilla de variables (.env NO se versiona)
+|-- Makefile / arrancar.bat    Arranque en un comando
+|
+|-- backend/                   Spring Boot 3.2.5 / Java 21
+|   +-- src/main/java/org/uteq/backend/
+|   |   |-- academico/         estudiante, representante, pago
+|   |   |-- deportivo/         categoria, sesion, asistencia, evaluacion, lesion
+|   |   |-- seguridad/         auth (JWT), usuario, persona, estado
+|   |   |-- common/            clima (API externa), ia, exception
+|   |   +-- config/            SecurityConfig, RedisCacheConfig
+|   +-- src/test/java/         211 pruebas
+|
+|-- frontend/                  Angular (SPA), Service Worker (PWA)
+|-- db/                        schema.sql, seed.sql, procedimientos
+|-- k6/                        Guion de carga (complementa Apache Bench)
+|-- scripts/                   audit-owasp.sh, audit-sql-dynamic.sh
+|
++-- docs/
+    |-- informe_unidad4.tex    Fuente de este informe
+    |-- informe_unidad4.pdf    Este documento
+    |-- referencias.bib        Bibliografia IEEE
+    |-- pallo_api_rest_swagger.md      Directriz 3
+    |-- pallo_soap_vs_rest.md          Directriz 4
+    |-- pallo_api_externa_cache.md     Paso 3 (API externa + cache)
+    |-- adr/                   7 ADR de decisiones de arquitectura
+    |-- observaciones/         OBSERVACIONES.md (docente) + REVISION-BELTRAN.md
+    |   +-- evidencias-beltran/        Capturas de los hallazgos
+    |-- mediciones/
+    |   |-- sec/               Evidencia OWASP generada por script
+    |   +-- perf/              Apache Bench y k6
+    |-- postman/
+    |   |-- coleccion.json     30 requests en 5 carpetas
+    |   +-- evidencias/        Capturas de la ejecucion en Postman
+    |-- requisitos/            SRS, casos de uso, historias
+    |-- arquitectura/          Diagramas C4 (niveles 1-3)
+    +-- trazabilidad/          matriz.csv
+\end{lstlisting}
+
+Dos advertencias sobre la lectura de esta estructura, ampliadas en \texttt{README.md}:
+
+\begin{enumerate}
+  \item Los directorios \texttt{backend/}, \texttt{frontend/}, \texttt{db/}, \texttt{k6/},
+        \texttt{scripts/} y buena parte de \texttt{docs/} son una \textbf{copia} del proyecto
+        SGED, cuyo repositorio original y cuyo historial real de autoría están en
+        \url{https://github.com/DarwinSM21/SGED_APPWEB}. Se incorporaron a este repositorio en
+        un único \textit{commit} para que la práctica sea autocontenida, de modo que las
+        estadísticas de \texttt{git} de este repositorio \textbf{no} miden contribución
+        individual.
+  \item La única excepción es \texttt{backend/.../common/clima/} y sus pruebas, escritas para
+        esta práctica y no presentes en el repositorio original.
+\end{enumerate}
+
+% ============================================================
+%  ANEXO C — PREGUNTAS DE ANÁLISIS  [Pallo]
+% ============================================================
+\section{Anexo C --- Preguntas de Análisis}
+\label{apx:anexoC}
+
+\subsection{La decisión técnica más difícil (Bloom 6 --- Evaluación)}
+
+Revisando el PFC completo, la decisión más difícil no fue la elección del framework ---acotada
+por el docente y resuelta en el ADR-001--- sino \textbf{dónde almacenar el JWT en el cliente},
+registrada en los ADR-002 y ADR-007.
+
+Se consideraron dos alternativas. La primera, \texttt{localStorage} con cabecera
+\texttt{Authorization: Bearer}, es la más difundida en tutoriales y la más simple de programar:
+el frontend controla el token explícitamente y no hay que lidiar con CORS con credenciales ni
+con \texttt{SameSite}. Su defecto es estructural: cualquier XSS con ejecución de JavaScript lee
+\texttt{localStorage} y exfiltra la sesión completa. La segunda, cookie
+\texttt{HttpOnly + Secure + SameSite=Strict}, vuelve el token ilegible para JavaScript, de modo
+que un XSS deja de ser automáticamente una toma de sesión, pero introduce tres costos reales:
+obliga a \texttt{withCredentials: true} y a una configuración CORS más estricta, complica las
+pruebas manuales ---el token no se puede copiar y pegar--- y traslada al servidor el problema de
+la revocación, porque una cookie no se puede ``borrar'' de forma fiable desde el servidor.
+
+Se eligió la cookie \texttt{HttpOnly}, con una lista negra de revocación en Redis para el cierre
+de sesión. Con el conocimiento actual, \textbf{se tomaría la misma decisión}, y el criterio que
+la sostiene es de contexto y no de moda: el sistema maneja datos de menores de edad ---nombres,
+cédulas, lesiones---, y en ese escenario el impacto de una sesión robada pesa más que la
+comodidad de desarrollo. El propio informe aporta evidencia a favor: la auditoría A05 confirma
+una CSP restrictiva, y ambas medidas se refuerzan mutuamente. Lo que sí se haría distinto es el
+orden: la revocación en Redis se agregó después, y hubo un período en que cerrar sesión no
+invalidaba realmente el token.
+
+\subsection{Escalar a 500 usuarios concurrentes con 0\,\% de error (Bloom 5 --- Síntesis)}
+
+La medición de partida es concreta: \textbf{211,33 req/s con 0\,\% de error} a concurrencia 50,
+pero con P95 de 597 ms y P99 de 701 ms. El punto importante es que la tasa de error ya es cero;
+el problema al multiplicar por diez la carga no sería de corrección sino de saturación, y la cola
+alta de latencia indica dónde.
+
+La hipótesis principal es el \textbf{pool de conexiones}. El proyecto no configura HikariCP de
+forma explícita, por lo que opera con el valor por omisión de 10 conexiones: con 50 peticiones
+concurrentes, 40 esperan turno, y eso explica una mediana de 184 ms junto a un máximo de 799 ms
+mucho mejor que suponer lentitud de las consultas. El primer cambio, por tanto, es medir antes
+de escalar: instrumentar el tiempo de espera del pool y contrastarlo con el tiempo real de
+consulta.
+
+Los cambios necesarios, en orden de costo-beneficio:
+
+\begin{enumerate}
+  \item \textbf{Dimensionar el pool y la base.} Subir \texttt{maximum-pool-size} de forma
+        proporcional al paralelismo real de PostgreSQL, e introducir PgBouncer si el número de
+        conexiones supera lo que el motor sostiene con holgura.
+  \item \textbf{Replicar el backend horizontalmente.} Es viable porque la autenticación es
+        \textit{stateless} vía JWT y la caché es externa en Redis: varias réplicas detrás del
+        nginx que ya existe no necesitan sesión pegajosa. La lista negra de revocación,
+        compartida en Redis, sigue siendo coherente entre réplicas.
+  \item \textbf{Extender la caché HTTP más allá de los catálogos.} Los catálogos ya se sirven
+        con \texttt{ETag} y validación condicional (véase el análisis del principio
+        \textit{cacheable} en la pregunta siguiente), lo que retira carga del origen sin tocar la
+        base. Falta llevar el mismo criterio a los listados paginados, donde hoy sigue rigiendo
+        \texttt{no-store}; requiere una clave de validación que contemple la página, el orden y
+        el rol del solicitante.
+  \item \textbf{Réplicas de lectura en PostgreSQL} para separar las consultas de informes de la
+        ruta transaccional.
+\end{enumerate}
+
+\begin{lstlisting}[style=bash, caption={Arquitectura escalada propuesta}]
+                    [ Clientes  ~500 concurrentes ]
+                                 |
+                        [ nginx  TLS + balanceo ]
+                                 |
+             +-------------------+-------------------+
+             |                   |                   |
+      [ backend #1 ]      [ backend #2 ]      [ backend #3 ]
+             |                   |                   |
+             +---------+---------+---------+---------+
+                       |                   |
+              [ Redis  cache +      [ PgBouncer  pool ]
+                blacklist JWT ]             |
+                                   +--------+--------+
+                                   |                 |
+                          [ PostgreSQL      [ replica de
+                            primario ]        lectura ]
+\end{lstlisting}
+
+Sostener 0\,\% de error a esa escala exige además dos piezas que hoy no existen: un
+\textit{circuit breaker} en las llamadas al proveedor externo de clima y límites de
+concurrencia por endpoint, para que una saturación degrade servicio en lugar de encolar hasta el
+agotamiento \parencite{nygard2018}.
+
+\subsection{Los 6 principios REST de Fielding frente a la API del SGED (Bloom 4 --- Análisis)}
+
+\begin{table}[h!]
+  \centering
+  \caption{Cumplimiento de los principios REST \parencite{fielding2000} en la API del SGED}
+  \label{tab:fielding}
+  \begin{tabularx}{\linewidth}{@{}L{2.9cm}L{1.9cm}L{8.6cm}@{}}
+    \toprule
+    \textbf{Principio} & \textbf{Cumple} & \textbf{Análisis y costo de no cumplirlo} \\
+    \midrule
+    Cliente--Servidor & Completo &
+      SPA Angular y backend Spring Boot son artefactos desplegables independientes que solo se
+      comunican por HTTP/JSON. \\[3pt]
+    Sin estado & Parcial &
+      La identidad viaja en el JWT y no hay sesión HTTP en el servidor. Sin embargo, la
+      revocación consulta una lista negra en Redis, de modo que validar un token exige estado
+      compartido. \textit{Costo}: cada réplica depende de Redis; sin él no se puede distinguir un
+      token revocado de uno vigente. Se aceptó a cambio de que cerrar sesión sea efectivo. \\[3pt]
+    Cacheable & Parcial &
+      Era el incumplimiento más claro y se corrigió durante esta práctica. Los catálogos de solo
+      lectura responden ahora \texttt{Cache-Control: private, no-cache} con \texttt{ETag}, y una
+      revalidación devuelve 304 sin cuerpo (verificado: 457 bytes frente a 0). El resto de los
+      recursos conserva el \texttt{no-store} por omisión de Spring Security. \textit{Costo de lo
+      que falta}: en los listados paginados y en los informes sigue sin poder intervenir ninguna
+      caché; se compensa con caché de servidor en Redis, que reduce la carga de base pero no el
+      tráfico de red. Mantenerlo así es defendible ---son datos volátiles y dependientes del
+      rol---, pero es una limitación, no una virtud. \\[3pt]
+    Interfaz uniforme & Parcial &
+      URIs con sustantivos en plural (\texttt{/api/categorias}, \texttt{/api/estudiantes}),
+      verbos HTTP semánticos y códigos correctos (201, 204, 404, 422). Pero no hay hipermedia:
+      la API se sitúa en el nivel 2 del modelo de madurez de Richardson, no en el 3. Persisten
+      además endpoints con verbo en la ruta, como
+      \texttt{/api/estudiantes/operaciones/desactivar-categoria} o
+      \texttt{/api/consentimientos/\{id\}/revocar}. \textit{Costo}: el cliente debe conocer de
+      antemano todas las rutas y su acoplamiento al servidor es mayor; para un frontend propio y
+      versionado junto al backend, el costo es bajo y consciente. \\[3pt]
+    Sistema por capas & Completo &
+      nginx termina TLS delante del backend y el cliente no distingue si habla con el proxy o con
+      la aplicación; Redis y PgBouncer serían capas igualmente invisibles. \\[3pt]
+    Código bajo demanda & No aplica &
+      Principio explícitamente opcional en la formulación de Fielding. El frontend se entrega
+      como paquete estático compilado. \textit{Costo}: ninguno. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+El hallazgo con mayor consecuencia práctica es el tercero: el SGED se describe como una API REST
+cacheable y sus cabeceras dicen literalmente lo contrario. No es un defecto de implementación
+sino una omisión de diseño ---nadie revisó la configuración por omisión de Spring Security frente
+al principio--- y es también la palanca más barata para escalar, según se argumentó en la
+pregunta anterior.
+
+\subsection{Comparación con un sistema de producción y calidad ISO/IEC 25010 (Bloom 6)}
+
+El equipo ya mantiene una matriz de atributos de calidad con catorce escenarios trazados a
+evidencia ejecutable (\texttt{docs/iso25010-atributos-calidad.md}), lo que permite responder con
+datos propios y no con impresiones. Contrastado con lo que ofrece una plataforma comercial de
+gestión de clubes deportivos, el balance es el siguiente.
+
+\textbf{Cubierto de forma verificable}: seguridad (control de acceso por rol, credenciales con
+BCrypt de factor 12, TLS y cabeceras endurecidas, todo con evidencia en
+\texttt{docs/mediciones/sec/}); mantenibilidad (organización por dominios, cobertura JaCoCo con
+umbral en \texttt{pom.xml}, 211 pruebas); portabilidad (arranque reproducible con imágenes
+fijadas por digest); e interoperabilidad (OpenAPI y colección Postman versionada).
+
+\textbf{Requiere trabajo adicional para ser comercialmente viable}: la \textit{fiabilidad},
+porque no hay estrategia de respaldo y restauración de la base ni despliegue redundante ---un
+fallo del único contenedor de PostgreSQL implica pérdida de datos---; la
+\textit{eficiencia de desempeño} bajo carga real, según la cola de latencia ya discutida; la
+\textit{funcionalidad}, con dos brechas ya documentadas por el propio equipo (la fila 14 de su
+matriz y el hallazgo A04 sobre el alta de entrenadores); y la \textit{usabilidad accesible},
+donde existe configuración de Lighthouse pero no una auditoría WCAG sistemática.
+
+Una estimación honesta para cerrar esas brechas ---respaldos y recuperación, alta disponibilidad,
+corrección de A04, ajuste de rendimiento y auditoría de accesibilidad--- es de
+\textbf{ocho a doce semanas} de un equipo de tres personas a dedicación parcial, sin contar los
+requisitos legales de tratamiento de datos de menores, que en un producto comercial serían
+condición previa y no un atributo más.
+
+\textit{Nota de alcance:} esta comparación se hace contra las características públicamente
+documentadas de la categoría de plataformas de gestión deportiva, no contra un caso de estudio
+publicado en particular. Si la evaluación exige citar uno específico, corresponde al equipo
+seleccionarlo e incorporarlo a las referencias; no se cita aquí ninguno para no atribuir datos a
+una fuente que no se consultó directamente.
+
 \section{Archivo \texttt{referencias.bib}}
 \label{apx:bib}
 

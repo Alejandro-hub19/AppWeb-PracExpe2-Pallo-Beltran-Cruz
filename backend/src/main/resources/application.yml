@@ -47,6 +47,27 @@ ia:
     # Los modelos "-latest" piensan antes de responder (~5s medidos); 8s quedaba ajustado.
     timeout-segundos: ${IA_TIMEOUT_SEGUNDOS:15}
 
+# API REST externa consumida por el sistema (Open-Meteo). No lleva clave: es
+# publica y gratuita, y esa fue justamente la razon de elegirla, porque el
+# sistema debe levantar completo desde una clonacion limpia.
+# Coordenadas por defecto: Quevedo, Los Rios, donde esta la cancha.
+clima:
+  base-url: ${CLIMA_BASE_URL:https://api.open-meteo.com/v1}
+  latitud: ${CLIMA_LATITUD:-1.0286}
+  longitud: ${CLIMA_LONGITUD:-79.4636}
+  zona-horaria: ${CLIMA_ZONA_HORARIA:America/Guayaquil}
+  ubicacion: ${CLIMA_UBICACION:Quevedo, Los Rios}
+  # Corto: el clima es un dato de apoyo, no puede frenar la pantalla.
+  timeout-segundos: ${CLIMA_TIMEOUT_SEGUNDOS:5}
+  # 10 minutos. El pronostico horario del proveedor no cambia mas rapido que
+  # eso, asi que pedirlo mas seguido solo gastaria cuota.
+  cache-ttl-segundos: ${CLIMA_CACHE_TTL_SEGUNDOS:600}
+  entrenamiento:
+    # Franja usada cuando el cliente no envia una: horario habitual de
+    # entrenamiento vespertino de la escuela.
+    hora-inicio-defecto: ${CLIMA_HORA_INICIO:15:00}
+    hora-fin-defecto: ${CLIMA_HORA_FIN:19:00}
+
 asistencia:
   qr:
     ttl-segundos: ${ASISTENCIA_QR_TTL_SEGUNDOS:60}
