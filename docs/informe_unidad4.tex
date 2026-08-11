@@ -599,22 +599,25 @@ encontraron cinco hallazgos, ordenados de menor a mayor severidad:
     \texttt{mensajeDeError(status)}. Es una violación medible del Criterio de Éxito~3.3.1
     (\textit{Identificación de Errores}) de \textcite{wcag22} (Sección~\ref{sec:biblio}): el
     mensaje no identifica el campo real que causó el error.
-  \item \textbf{\texttt{500} en vez de \texttt{400} ante un parámetro inválido (severidad
-    media, robustez).} \texttt{GET /api/categorias} vincula el parámetro de consulta
+  \item \textbf{\texttt{500} en vez de \texttt{400} ante un parámetro inválido --- \textbf{corregido}
+    (severidad media, robustez).} \texttt{GET /api/categorias} vinculaba el parámetro de consulta
     \texttt{sort} directamente a un \texttt{Pageable} de Spring Data sin validarlo; un valor
-    de \texttt{sort} que no corresponde a una columna real de la entidad produce una
-    excepción SQL no controlada que el manejador global traduce en un
-    \texttt{500 Internal Server Error}. Esto no es solo una preferencia de estilo: según
+    de \texttt{sort} que no correspondía a una columna real de la entidad producía una
+    excepción SQL no controlada que el manejador global traducía en un
+    \texttt{500 Internal Server Error}. Esto no era solo una preferencia de estilo: según
     \textcite{masse2011} (Sección~\ref{sec:biblio}) y la semántica normativa de
     \textcite{rfc7231}, \texttt{5xx} está reservado a fallos genuinos del servidor
     (\S6.6.1 de \textcite{rfc7231}), mientras que una entrada del cliente que no puede
     procesarse por estar mal formada corresponde a \texttt{400 Bad Request} (\S6.5.1 de
-    \textcite{rfc7231}). Devolver \texttt{500} aquí no solo es una respuesta técnicamente
-    incorrecta: oculta al cliente que el error es corregible ajustando su propia petición,
-    y en un entorno de producción dispararía falsas alarmas de monitoreo de infraestructura
-    por un problema que en realidad es de validación de entrada. Se verificó y reprodujo
-    con un test de integración propio contra base de datos real (ver
-    Sección~\ref{sec:mvc}).
+    \textcite{rfc7231}). El defecto quedó \textbf{cerrado}: se agregó
+    \texttt{PageableSortValidator} (\texttt{common/validation/}), reutilizable para cualquier
+    endpoint paginado del proyecto, que valida la propiedad de \texttt{sort} contra una lista
+    blanca de columnas reales antes de delegar al repositorio; si la propiedad no existe,
+    lanza \texttt{OrdenamientoInvalidoException} (\texttt{common/exception/}), que el
+    \texttt{GlobalExceptionHandler} traduce en \texttt{400} con \texttt{ProblemDetails},
+    igual que el resto de la API. El test de integración se actualizó de
+    \texttt{is5xxServerError()} a \texttt{isBadRequest()} y confirma el comportamiento
+    corregido contra base de datos real, no mocks (ver Sección~\ref{sec:mvc}).
   \item \textbf{CRUD de Categorías sin interfaz (severidad media, funcionalidad incompleta).}
     El backend expone \texttt{GET}, \texttt{POST}, \texttt{PUT} y \texttt{DELETE} completos
     para \texttt{/api/categorias}, pero el frontend Angular únicamente consume
@@ -662,10 +665,11 @@ La tabla completa de hallazgos --- con causa raíz, severidad y evidencia trazab
 formato de seguimiento que el propio equipo SGED usa en \texttt{docs/observaciones/}
 \texttt{OBSERVACIONES.md} --- queda documentada en
 \texttt{docs/observaciones/REVISION-BELTRAN.md}. El Hallazgo~2 (\texttt{500} en vez de
-\texttt{400} ante un \texttt{sort} inválido) se reprodujo además con un test de integración
-propio contra base de datos real, no mocks:
+\texttt{400} ante un \texttt{sort} inválido) se corrigió con \texttt{PageableSortValidator} y
+quedó verificado con un test de integración propio contra base de datos real, no mocks:
 \texttt{backend/src/test/\allowbreak java/\allowbreak org/uteq/backend/\allowbreak deportivo/\allowbreak categoria/\allowbreak CategoriaSortValidationIntegrationTest.java},
-verificado en verde localmente (\texttt{mvnw test -Dtest=CategoriaSortValidationIntegrationTest}).
+en verde localmente (\texttt{mvnw test -Dtest=CategoriaSortValidationIntegrationTest}), ahora
+comprobando \texttt{400} en vez del \texttt{500} original.
 
 % ============================================================
 %  4. API REST + SWAGGER UI  [Pallo]  — Directriz 3
