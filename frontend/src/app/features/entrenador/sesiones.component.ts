@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { SesionesService } from './sesiones.service';
-import { CategoriaOpcion, Sesion } from './sesiones.models';
+import { CategoriaOpcion, ClimaEntrenamiento, Sesion } from './sesiones.models';
 import { inicialesDe } from './plantilla.models';
 
 /**
@@ -26,6 +26,40 @@ import { inicialesDe } from './plantilla.models';
           {{ mostrarFormulario() ? 'Cancelar' : '+ Nueva sesión' }}
         </button>
       </div>
+
+      @if (clima(); as c) {
+        <section class="card clima" [class.clima--alerta]="hayRiesgoDeLluvia()">
+          <div class="clima__cabecera">
+            <h2 class="clima__titulo">Clima en la cancha</h2>
+            @if (c.disponible) {
+              <span class="badge" [class.badge--info]="c.origen === 'api-externa'" [class.badge--muted]="c.origen === 'cache'">
+                {{ c.origen === 'cache' ? 'desde caché' : 'API externa' }}
+              </span>
+            }
+          </div>
+
+          @if (c.disponible && c.pronostico; as p) {
+            <div class="clima__datos">
+              <div class="clima__dato">
+                <span class="clima__valor">{{ p.temperaturaMaxC }}°C</span>
+                <span class="clima__etiqueta">Máxima</span>
+              </div>
+              <div class="clima__dato">
+                <span class="clima__valor">{{ p.probabilidadLluviaMax }}%</span>
+                <span class="clima__etiqueta">Prob. lluvia</span>
+              </div>
+              <div class="clima__dato">
+                <span class="clima__valor">{{ p.precipitacionTotalMm }} mm</span>
+                <span class="clima__etiqueta">Precipitación</span>
+              </div>
+            </div>
+            <p class="clima__recomendacion">{{ p.recomendacion }}</p>
+            <p class="clima__pie">{{ p.ubicacion }} · {{ p.desde }}–{{ p.hasta }}</p>
+          } @else {
+            <p class="aviso">{{ c.motivo }}</p>
+          }
+        </section>
+      }
 
       @if (mostrarFormulario()) {
         <form class="card formulario" (ngSubmit)="onCrear()">
@@ -115,6 +149,17 @@ import { inicialesDe } from './plantilla.models';
     .cabecera-pantalla { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; }
     .titulo-pantalla { font-size: 1.3rem; }
 
+    .clima { padding: 1.1rem 1.25rem; margin-bottom: 1.25rem; }
+    .clima--alerta { border-left: 3px solid var(--color-warning); }
+    .clima__cabecera { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: .8rem; }
+    .clima__titulo { font-size: .95rem; }
+    .clima__datos { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; }
+    .clima__dato { display: flex; flex-direction: column; gap: .1rem; }
+    .clima__valor { font-size: 1.15rem; font-weight: 700; }
+    .clima__etiqueta { font-size: .74rem; color: var(--color-text-faint); text-transform: uppercase; letter-spacing: .03em; }
+    .clima__recomendacion { font-size: .87rem; margin-top: .8rem; }
+    .clima__pie { font-size: .75rem; color: var(--color-text-faint); margin-top: .35rem; }
+
     .formulario { padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem; }
     .fila-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     @media (max-width: 560px) { .fila-2 { grid-template-columns: 1fr; } }
@@ -151,6 +196,7 @@ export class SesionesComponent implements OnInit {
   readonly guardando = signal(false);
   readonly error = signal('');
   readonly mostrarFormulario = signal(false);
+  readonly clima = signal<ClimaEntrenamiento | null>(null);
 
   /** Propiedades planas, no signals: [(ngModel)] las actualiza via su propio manejador de evento. */
   idCategoria: number | null = null;
@@ -214,9 +260,34 @@ export class SesionesComponent implements OnInit {
       next: (sesiones) => {
         this.sesiones.set(sesiones);
         this.cargando.set(false);
+        this.cargarClima();
       },
       error: () => this.cargando.set(false),
     });
+  }
+
+  /**
+   * Consulta el clima despues de tener las sesiones, para poder pedir la franja
+   * real de la de hoy. Sin sesion hoy, el backend resuelve con su horario por
+   * defecto.
+   */
+  private cargarClima(): void {
+    const hoy = new Date().toISOString().slice(0, 10);
+    const sesionDeHoy = this.sesiones().find((s) => s.fecha === hoy);
+
+    this.sesionesService
+      .climaEntrenamiento(hoy, sesionDeHoy?.horaInicio ?? null, sesionDeHoy?.horaFin ?? null)
+      .subscribe({
+        next: (clima) => this.clima.set(clima),
+        // La tarjeta es informativa: si ni el endpoint responde, no se pinta y
+        // la pantalla de sesiones sigue siendo utilizable.
+        error: () => this.clima.set(null),
+      });
+  }
+
+  hayRiesgoDeLluvia(): boolean {
+    const pronostico = this.clima()?.pronostico;
+    return pronostico != null && pronostico.probabilidadLluviaMax >= 40;
   }
 
   iniciales(nombre: string): string {
