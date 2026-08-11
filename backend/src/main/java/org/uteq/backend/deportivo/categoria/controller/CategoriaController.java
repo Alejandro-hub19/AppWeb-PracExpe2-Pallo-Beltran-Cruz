@@ -8,11 +8,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.uteq.backend.common.validation.PageableSortValidator;
 import org.uteq.backend.deportivo.categoria.dto.CategoriaRequest;
 import org.uteq.backend.deportivo.categoria.dto.CategoriaResponse;
 import org.uteq.backend.deportivo.categoria.service.CategoriaService;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * CRUD del catalogo de categorias. La lectura la necesitan todos los roles
@@ -27,9 +29,18 @@ public class CategoriaController {
 
     private final CategoriaService categoriaService;
 
+    /**
+     * Propiedades reales de Categoria admitidas para ordenar (REV-02:
+     * antes de esta lista blanca, un "sort" con cualquier otro valor
+     * producia un 500 en vez de un 400).
+     */
+    private static final Set<String> PROPIEDADES_ORDENABLES = Set.of(
+            "idCategoria", "nombre", "edadMin", "edadMax", "descripcion", "activo", "createdAt");
+
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ENTRENADOR')")
     public ResponseEntity<Page<CategoriaResponse>> listarPaginado(Pageable pageable) {
+        PageableSortValidator.validar(pageable, PROPIEDADES_ORDENABLES);
         return ResponseEntity.ok(categoriaService.listarPaginado(pageable));
     }
 

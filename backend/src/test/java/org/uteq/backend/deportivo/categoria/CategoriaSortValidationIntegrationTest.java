@@ -33,9 +33,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * codigo correcto para una entrada mal formada del cliente es 400 Bad
  * Request, no un error de servidor.
  *
- * Este test queda en rojo (falla) mientras el defecto no se corrija en
- * el proyecto original SGED_APPWEB; documenta el comportamiento actual,
- * no el deseado, con fines de evidencia para la revision de la Directriz 2.
+ * Este test verifica la CORRECCION del defecto (REV-02 cerrado): antes
+ * devolvia 500, ahora PageableSortValidator lo detecta antes de llegar a
+ * Hibernate y responde 400 con ProblemDetails, igual que el resto de la
+ * API.
  *
  * Nota de infraestructura: este es el primer test de integracion real
  * (@SpringBootTest sobre base de datos, no mocks) del proyecto que
@@ -87,13 +88,12 @@ class CategoriaSortValidationIntegrationTest {
 
     @Test
     @WithMockUser(roles = "ADMINISTRADOR")
-    @DisplayName("Hallazgo 2 (reproducido): sort con columna inexistente da 500, no 400")
-    void listarConSortInvalido_devuelveQuinientosEnVezDeCuatrocientos() throws Exception {
-        // Comportamiento ACTUAL del SGED: 500 (bug documentado).
-        // Lo correcto segun REST API Design Rulebook (Masse, 2011) seria 400.
+    @DisplayName("Hallazgo 2 (corregido): sort con columna inexistente da 400, no 500")
+    void listarConSortInvalido_devuelveCuatrocientos() throws Exception {
+        // Comportamiento CORREGIDO: 400 con ProblemDetails (antes era 500).
         mockMvc.perform(get("/api/categorias")
                         .param("sort", "noExisteEstaColumna"))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
