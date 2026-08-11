@@ -1576,6 +1576,73 @@ bajo el código OBS-13, con los tres \textit{commits} implicados.
 \appendix
 
 % ============================================================
+%  ANEXO A — ESTRUCTURA DEL REPOSITORIO  [Pallo]
+% ============================================================
+\section{Anexo A --- Estructura del repositorio (rama \texttt{main})}
+\label{apx:anexoA}
+
+Repositorio de entrega: \url{https://github.com/Alejandro-hub19/AppWeb-PracExpe2-Pallo-Beltran-Cruz}
+--- 515 archivos versionados en la rama \texttt{main}.
+
+\begin{lstlisting}[style=bash, caption={Estructura de primer y segundo nivel}]
+.
+|-- README.md                  Portada del repo + NOTA DE AUTORIA (leer primero)
+|-- LEEME_PRIMERO.md           Origen del codigo y fecha de sincronizacion
+|-- CONTRIBUTORS.md            Autoria real del PFC con roles CRediT
+|-- docker-compose.yml         4 servicios, healthchecks, imagenes por digest
+|-- .env.example               Plantilla de variables (.env NO se versiona)
+|-- Makefile / arrancar.bat    Arranque en un comando
+|
+|-- backend/                   Spring Boot 3.2.5 / Java 21
+|   +-- src/main/java/org/uteq/backend/
+|   |   |-- academico/         estudiante, representante, pago
+|   |   |-- deportivo/         categoria, sesion, asistencia, evaluacion, lesion
+|   |   |-- seguridad/         auth (JWT), usuario, persona, estado
+|   |   |-- common/            clima (API externa), ia, exception
+|   |   +-- config/            SecurityConfig, RedisCacheConfig
+|   +-- src/test/java/         211 pruebas
+|
+|-- frontend/                  Angular (SPA), Service Worker (PWA)
+|-- db/                        schema.sql, seed.sql, procedimientos
+|-- k6/                        Guion de carga (complementa Apache Bench)
+|-- scripts/                   audit-owasp.sh, audit-sql-dynamic.sh
+|
++-- docs/
+    |-- informe_unidad4.tex    Fuente de este informe
+    |-- informe_unidad4.pdf    Este documento
+    |-- referencias.bib        Bibliografia IEEE
+    |-- pallo_api_rest_swagger.md      Directriz 3
+    |-- pallo_soap_vs_rest.md          Directriz 4
+    |-- pallo_api_externa_cache.md     Paso 3 (API externa + cache)
+    |-- adr/                   7 ADR de decisiones de arquitectura
+    |-- observaciones/         OBSERVACIONES.md (docente) + REVISION-BELTRAN.md
+    |   +-- evidencias-beltran/        Capturas de los hallazgos
+    |-- mediciones/
+    |   |-- sec/               Evidencia OWASP generada por script
+    |   +-- perf/              Apache Bench y k6
+    |-- postman/
+    |   |-- coleccion.json     30 requests en 5 carpetas
+    |   +-- evidencias/        Capturas de la ejecucion en Postman
+    |-- requisitos/            SRS, casos de uso, historias
+    |-- arquitectura/          Diagramas C4 (niveles 1-3)
+    +-- trazabilidad/          matriz.csv
+\end{lstlisting}
+
+Dos advertencias sobre la lectura de esta estructura, ampliadas en \texttt{README.md}:
+
+\begin{enumerate}
+  \item Los directorios \texttt{backend/}, \texttt{frontend/}, \texttt{db/}, \texttt{k6/},
+        \texttt{scripts/} y buena parte de \texttt{docs/} son una \textbf{copia} del proyecto
+        SGED, cuyo repositorio original y cuyo historial real de autoría están en
+        \url{https://github.com/DarwinSM21/SGED_APPWEB}. Se incorporaron a este repositorio en
+        un único \textit{commit} para que la práctica sea autocontenida, de modo que las
+        estadísticas de \texttt{git} de este repositorio \textbf{no} miden contribución
+        individual.
+  \item La única excepción es \texttt{backend/.../common/clima/} y sus pruebas, escritas para
+        esta práctica y no presentes en el repositorio original.
+\end{enumerate}
+
+% ============================================================
 %  ANEXO C — PREGUNTAS DE ANÁLISIS  [Pallo]
 % ============================================================
 \section{Anexo C --- Preguntas de Análisis}
