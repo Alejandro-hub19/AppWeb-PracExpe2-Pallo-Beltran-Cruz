@@ -679,12 +679,21 @@ verificado en verde localmente (\texttt{mvnw test -Dtest=CategoriaSortValidation
 restricciones arquitectónicas. La API del SGED las adopta de forma desigual, y esa desigualdad
 está analizada una por una ---con el costo concreto de cada incumplimiento--- en el
 Anexo~\ref{apx:anexoC}. En síntesis: \textit{cliente--servidor} y \textit{sistema por capas} se
-cumplen por completo; \textit{sin estado} e \textit{interfaz uniforme} de forma parcial;
-\textit{cacheable} no se cumple, porque Spring Security emite
-\texttt{Cache-Control: no-store} en los endpoints autenticados; y \textit{código bajo demanda}
-no aplica por ser opcional. Los dos apartados siguientes desarrollan las dos restricciones sobre
-las que el equipo tomó decisiones explícitas de diseño: la interfaz uniforme, a través de las
-URIs, y la ausencia de estado, a través del JWT.
+cumplen por completo; \textit{sin estado}, \textit{interfaz uniforme} y \textit{cacheable} de
+forma parcial; y \textit{código bajo demanda} no aplica por ser opcional.
+
+La restricción \textit{cacheable} merece una nota, porque su cumplimiento parcial es
+consecuencia de una corrección hecha durante esta práctica. Spring Security emite por omisión
+\texttt{Cache-Control: no-store} en todo endpoint autenticado, lo que impedía por completo que
+cualquier caché interviniera. Se habilitó validación por \texttt{ETag} en los catálogos de solo
+lectura ---categorías y estados generales---, que ahora responden
+\texttt{Cache-Control: private, no-cache} y devuelven 304 cuando el cliente ya tiene la versión
+vigente. El resto de los recursos conserva \texttt{no-store}, y eso es deliberado: son datos
+volátiles y ligados al rol de quien pregunta, donde cachear sería incorrecto y no una mejora.
+
+Los dos apartados siguientes desarrollan las otras dos restricciones sobre las que el equipo
+tomó decisiones explícitas de diseño: la interfaz uniforme, a través de las URIs, y la ausencia
+de estado, a través del JWT.
 
 \subsection{Diseño de URIs: reglas aplicadas y anti-patrones detectados}
 
@@ -1698,11 +1707,12 @@ Los cambios necesarios, en orden de costo-beneficio:
         \textit{stateless} vía JWT y la caché es externa en Redis: varias réplicas detrás del
         nginx que ya existe no necesitan sesión pegajosa. La lista negra de revocación,
         compartida en Redis, sigue siendo coherente entre réplicas.
-  \item \textbf{Habilitar caché HTTP en las lecturas cacheables.} Hoy las respuestas viajan con
-        \texttt{Cache-Control: no-store} por la configuración de Spring Security, lo que impide
-        cualquier caché intermedia (véase el análisis del principio \textit{cacheable} en la
-        pregunta siguiente). Los catálogos ---categorías, estados--- podrían servirse con
-        \texttt{ETag} y validación condicional, retirando carga del origen sin tocar la base.
+  \item \textbf{Extender la caché HTTP más allá de los catálogos.} Los catálogos ya se sirven
+        con \texttt{ETag} y validación condicional (véase el análisis del principio
+        \textit{cacheable} en la pregunta siguiente), lo que retira carga del origen sin tocar la
+        base. Falta llevar el mismo criterio a los listados paginados, donde hoy sigue rigiendo
+        \texttt{no-store}; requiere una clave de validación que contemple la página, el orden y
+        el rol del solicitante.
   \item \textbf{Réplicas de lectura en PostgreSQL} para separar las consultas de informes de la
         ruta transaccional.
 \end{enumerate}
@@ -1749,12 +1759,15 @@ agotamiento \parencite{nygard2018}.
       revocación consulta una lista negra en Redis, de modo que validar un token exige estado
       compartido. \textit{Costo}: cada réplica depende de Redis; sin él no se puede distinguir un
       token revocado de uno vigente. Se aceptó a cambio de que cerrar sesión sea efectivo. \\[3pt]
-    Cacheable & \textbf{No cumplido} &
-      Las respuestas salen con \texttt{Cache-Control: no-cache, no-store, must-revalidate}
-      (verificable en \texttt{a05-cabeceras.txt}), configuración por omisión de Spring Security
-      para endpoints autenticados. \textit{Costo}: ninguna caché de navegador, proxy o CDN puede
-      intervenir, y catálogos que casi no cambian se recalculan en cada petición. Se compensa
-      con caché de servidor en Redis, que reduce la carga de base pero no el tráfico de red. \\[3pt]
+    Cacheable & Parcial &
+      Era el incumplimiento más claro y se corrigió durante esta práctica. Los catálogos de solo
+      lectura responden ahora \texttt{Cache-Control: private, no-cache} con \texttt{ETag}, y una
+      revalidación devuelve 304 sin cuerpo (verificado: 457 bytes frente a 0). El resto de los
+      recursos conserva el \texttt{no-store} por omisión de Spring Security. \textit{Costo de lo
+      que falta}: en los listados paginados y en los informes sigue sin poder intervenir ninguna
+      caché; se compensa con caché de servidor en Redis, que reduce la carga de base pero no el
+      tráfico de red. Mantenerlo así es defendible ---son datos volátiles y dependientes del
+      rol---, pero es una limitación, no una virtud. \\[3pt]
     Interfaz uniforme & Parcial &
       URIs con sustantivos en plural (\texttt{/api/categorias}, \texttt{/api/estudiantes}),
       verbos HTTP semánticos y códigos correctos (201, 204, 404, 422). Pero no hay hipermedia:

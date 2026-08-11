@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,10 +34,18 @@ public class CategoriaController {
         return ResponseEntity.ok(categoriaService.listarPaginado(pageable));
     }
 
+    /**
+     * Catalogo estable: se declara cacheable con revalidacion obligatoria
+     * (ver {@code HttpCacheConfig}). Sin esto, el valor por omision de Spring
+     * Security es {@code no-store} y la API incumple la restriccion
+     * <em>cacheable</em> de Fielding.
+     */
     @GetMapping("/activas")
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ENTRENADOR', 'RECEPCIONISTA')")
     public ResponseEntity<List<CategoriaResponse>> listarActivas() {
-        return ResponseEntity.ok(categoriaService.listarTodasActivas());
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noCache().cachePrivate())
+                .body(categoriaService.listarTodasActivas());
     }
 
     @GetMapping("/{id}")

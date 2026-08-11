@@ -24,6 +24,8 @@ import org.uteq.backend.deportivo.categoria.service.CategoriaService;
 import java.time.Instant;
 import java.util.List;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
@@ -74,6 +76,25 @@ class CategoriaControllerTest {
         mockMvc.perform(get("/api/categorias/activas"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].nombre").value("Sub-12"));
+    }
+
+    /**
+     * Guarda la correccion del principio <em>cacheable</em> de Fielding: el
+     * catalogo debe declararse cacheable con revalidacion obligatoria. Si
+     * alguien retira el {@code cacheControl} del controlador, Spring Security
+     * vuelve a imponer {@code no-store} y la API deja de cumplir la
+     * restriccion sin que nada mas lo advierta.
+     */
+    @Test
+    @DisplayName("GET /api/categorias/activas - declara Cache-Control private y no-cache")
+    void listarActivas_es_cacheable_con_revalidacion() throws Exception {
+        when(categoriaService.listarTodasActivas()).thenReturn(List.of(respuesta()));
+
+        mockMvc.perform(get("/api/categorias/activas"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", containsString("no-cache")))
+                .andExpect(header().string("Cache-Control", containsString("private")))
+                .andExpect(header().string("Cache-Control", not(containsString("no-store"))));
     }
 
     @Test
